@@ -96,7 +96,7 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
       <span class="info-value process-area" id="infoProcess">-</span>
     </div>
     <div class="info-row">
-      <span class="info-label highlight">刀模</span>
+      <span class="info-label highlight">刀模编号</span>
       <span class="info-value highlight-val" id="infoMold">-</span>
     </div>
     <div class="info-row">
@@ -151,6 +151,59 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 // ============ API 地址 ============
 var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
 
+// ============ 工序同义词映射 ============
+// key = 标准工序名, value = 可能的叫法列表
+var PROCESS_SYNONYMS = {
+  '印刷': ['印刷', '印', '彩印', '胶印', '丝印', 'UV印刷', 'UV印'],
+  '覆膜': ['覆膜', '覆哑膜', '覆光膜', '过胶', '哑胶', '光胶', '过哑胶', '过光胶', '贴膜', '裱膜', '哑膜', '光膜'],
+  '裱坑': ['裱坑', '裱纸', '裱瓦', '贴坑', '裱楞'],
+  '烫金': ['烫金', '烫银', '烫金银', '烫金击凸', '烫银击凸', '击凹凸', '烫印', '电化铝', '烫金/击凹凸', '烫金银/击凹凸'],
+  '压纹': ['压纹', '压花', '纹', '压纹路'],
+  '模切': ['模切', '刀模', '啤', '啤切', '冲切', '切'],
+  '糊盒': ['糊盒', '粘盒', '粘', '糊', '粘合', '成型', '折盒']
+};
+
+// 全局变量：当前排版需要的标准工序列表
+var requiredProcesses = [];
+// 已完成的标准工序
+var completedStandardProcesses = [];
+
+// ============ 同义词匹配：将工人输入转为标准工序名 ============
+function normalizeProcessName(input) {
+  if (!input) return '';
+  var trimmed = input.trim();
+  for (var stdName in PROCESS_SYNONYMS) {
+    var aliases = PROCESS_SYNONYMS[stdName];
+    for (var i = 0; i < aliases.length; i++) {
+      // 精确匹配
+      if (trimmed === aliases[i]) return stdName;
+    }
+    // 模糊包含匹配（如输入"覆哑膜"包含"覆膜"的同义词"哑膜"）
+    for (var i = 0; i < aliases.length; i++) {
+      if (trimmed.indexOf(aliases[i]) >= 0 || aliases[i].indexOf(trimmed) >= 0) {
+        return stdName;
+      }
+    }
+  }
+  return trimmed; // 无法识别则原样返回
+}
+
+// ============ 从工艺要求文本中解析出需要的标准工序 ============
+function parseRequiredProcesses(processText) {
+  if (!processText || processText === '未填写') return [];
+  var found = [];
+  for (var stdName in PROCESS_SYNONYMS) {
+    var aliases = PROCESS_SYNONYMS[stdName];
+    for (var i = 0; i < aliases.length; i++) {
+      if (processText.indexOf(aliases[i]) >= 0) {
+        found.push(stdName);
+        break; // 匹配到一个别名就够了
+      }
+    }
+  }
+  return found;
+}
+
 // ============ 获取URL参数 ============
 function getUrlParam(name) {
   var params = new URLSearchParams(window.location.search);
@@ -174,15 +227,21 @@ function loadProcessInfo(layoutName) {
       if (data.success && data.info) {
         document.getElementById('infoCard').style.display = 'block';
         document.getElementById('infoMaterial').textContent = data.info.material || '未填写';
-        document.getElementById('infoProcess').textContent = data.info.process || '未填写';
+        var processText = data.info.process || '未填写';
+        document.getElementById('infoProcess').textContent = processText;
         document.getElementById('infoMold').textContent = data.info.mold || '未填写';
         document.getElementById('infoQuantity').textContent = data.info.quantity || '未填写';
+
+        // 解析工艺要求，得到本单需要的标准工序列表
+        requiredProcesses = parseRequiredProcesses(processText);
       } else {
         document.getElementById('infoCard').style.display = 'block';
+        requiredProcesses = [];
       }
     })
     .catch(function(err) {
       document.getElementById('infoCard').style.display = 'none';
+      requiredProcesses = [];
     });
 }
 
@@ -194,36 +253,74 @@ function loadHistory(layoutName) {
   fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(data) {
-      if (!data.records || data.records.length === 0) {
-        container.innerHTML = '<div class="empty-state">暂无历史记录<br>扫码上报第一条工序</div>';
+      var records = data.records || [];
+
+      // 如果没有解析到工艺要求，显示所有记录 + 提示
+      if (requiredProcesses.length === 0) {
+        if (records.length === 0) {
+          container.innerHTML = '<div class="empty-state">暂无历史记录<br>扫码上报第一条工序</div>';
+        } else {
+          var html = '';
+          records.forEach(function(rec) {
+            var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+            html += buildRecordHTML(rec, done);
+          });
+          container.innerHTML = html;
+        }
         return;
       }
 
-      var allProcesses = ['印刷','裱坑','烫金银/击凹凸','压纹','模切','糊盒'];
-      var completedNames = [];
-      var html = '';
+      // 有工艺要求时：智能匹配
+      completedStandardProcesses = [];
+      var matchedRecords = {}; // stdName -> record
 
-      data.records.forEach(function(rec) {
+      records.forEach(function(rec) {
+        var stdName = normalizeProcessName(rec.工序);
         var done = (rec.状态 === '已完成' || rec.状态 === '✅');
-        completedNames.push(rec.工序);
-        html += '<div class="record-item">';
-        html += '<div class="record-row">';
-        html += '<span class="record-status">' + (done ? '✅' : '⏳') + '</span>';
-        html += '<span class="record-name">' + rec.工序 + '</span>';
-        html += '<span class="record-name" style="margin-left:auto;color:#888;font-size:12px;">' + (rec.上报人 || '') + '</span>';
-        html += '</div>';
-        html += '<div class="record-meta">';
-        if (rec.更新时间) {
-          var d = new Date(rec.更新时间);
-          var pad = function(n){ return n < 10 ? '0'+n : n; };
-          html += pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+
+        // 检查是否匹配到工艺要求中的某个工序
+        var matched = false;
+        for (var i = 0; i < requiredProcesses.length; i++) {
+          if (requiredProcesses[i] === stdName) {
+            matched = true;
+            // 保留最新的一条记录
+            if (!matchedRecords[stdName] || rec.更新时间 > matchedRecords[stdName].更新时间) {
+              matchedRecords[stdName] = rec;
+            }
+            if (done && completedStandardProcesses.indexOf(stdName) === -1) {
+              completedStandardProcesses.push(stdName);
+            }
+            break;
+          }
         }
-        html += '</div>';
-        html += '</div>';
+
+        // 不在工艺要求中的记录也显示（不归类到待完成）
+        if (!matched) {
+          // 未归类的记录也显示
+          var key = '__extra__' + rec.工序;
+          if (!matchedRecords[key]) {
+            matchedRecords[key] = rec;
+          }
+        }
       });
 
-      var pending = allProcesses.filter(function(p){ return completedNames.indexOf(p) === -1; });
-      pending.forEach(function(p) {
+      // 构建显示列表
+      var html = '';
+
+      // 1. 先显示已完成和进行中的（按工艺要求顺序）
+      requiredProcesses.forEach(function(stdName) {
+        if (matchedRecords[stdName]) {
+          var rec = matchedRecords[stdName];
+          var done = completedStandardProcesses.indexOf(stdName) >= 0;
+          html += buildRecordHTML(stdName, rec, done);
+        }
+      });
+
+      // 2. 显示未完成的工序
+      var pendingProcs = requiredProcesses.filter(function(p) {
+        return completedStandardProcesses.indexOf(p) === -1;
+      });
+      pendingProcs.forEach(function(p) {
         html += '<div class="record-item">';
         html += '<div class="record-row">';
         html += '<span class="record-status">⏳</span>';
@@ -233,15 +330,59 @@ function loadHistory(layoutName) {
         html += '</div>';
       });
 
+      // 3. 显示不在工艺要求中的额外记录
+      for (var key in matchedRecords) {
+        if (key.indexOf('__extra__') === 0) {
+          var rec = matchedRecords[key];
+          var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+          html += buildRecordHTML(rec.工序, rec, done, true);
+        }
+      }
+
       container.innerHTML = html;
 
-      if (pending.length > 0) {
-        document.getElementById('processSelect').value = pending[0];
+      // 更新下拉框：只显示未完成的工艺要求工序
+      var select = document.getElementById('processSelect');
+      select.innerHTML = '';
+      pendingProcs.forEach(function(p) {
+        var opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        select.appendChild(opt);
+      });
+      // 如果没有待完成的，加一个"全部完成"选项
+      if (pendingProcs.length === 0) {
+        var opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '✅ 全部工序已完成';
+        select.appendChild(opt);
       }
     })
     .catch(function(err) {
       container.innerHTML = '<div class="empty-state">加载失败，请检查网络<br><small>' + err.message + '</small></div>';
     });
+}
+
+// ============ 构建单条记录HTML ============
+function buildRecordHTML(displayName, rec, isDone, isExtra) {
+  var html = '<div class="record-item"' + (isExtra ? ' style="opacity:0.6"' : '') + '>';
+  html += '<div class="record-row">';
+  html += '<span class="record-status">' + (isDone ? '✅' : '⏳') + '</span>';
+  html += '<span class="record-name">' + displayName + '</span>';
+  if (rec.工序 !== displayName) {
+    html += '<span style="font-size:11px;color:#aaa;margin-left:4px;">(原:' + rec.工序 + ')</span>';
+  }
+  html += '<span class="record-name" style="margin-left:auto;color:#888;font-size:12px;">' + (rec.上报人 || '') + '</span>';
+  html += '</div>';
+  html += '<div class="record-meta">';
+  if (rec.更新时间) {
+    var d = new Date(rec.更新时间);
+    var pad = function(n){ return n < 10 ? '0'+n : n; };
+    html += pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  html += '</div>';
+  html += '</div>';
+  return html;
 }
 
 // ============ 提交工序 ============
@@ -250,6 +391,10 @@ function submitReport() {
   var process = document.getElementById('processSelect').value;
   var reporter = document.getElementById('reporter').value.trim();
 
+  if (!process) {
+    showToast('所有工序已完成，无需上报', 'error');
+    return;
+  }
   if (!reporter) {
     showToast('请填写上报人姓名', 'error');
     return;
@@ -259,6 +404,7 @@ function submitReport() {
   btn.disabled = true;
   btn.textContent = '提交中...';
 
+  // 提交时使用标准工序名（已经由下拉框保证）
   var url = API_BASE + '/api/records';
   var body = {
     layout_name: layoutName,
@@ -305,8 +451,12 @@ function submitReport() {
   document.getElementById('pageTitle').textContent = layoutName + ' 工序流转';
   document.getElementById('pageSub').textContent = '扫码追溯 · 工序管理';
 
+  // 先加载工艺信息（解析出需要的工序），再加载历史记录
   loadProcessInfo(layoutName);
-  loadHistory(layoutName);
+  // 延迟100ms确保工艺信息已加载
+  setTimeout(function() {
+    loadHistory(layoutName);
+  }, 100);
 })();
 </script>
 </body>
