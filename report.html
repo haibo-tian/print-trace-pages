@@ -451,12 +451,32 @@ function submitReport() {
   document.getElementById('pageTitle').textContent = layoutName + ' 工序流转';
   document.getElementById('pageSub').textContent = '扫码追溯 · 工序管理';
 
-  // 先加载工艺信息（解析出需要的工序），再加载历史记录
-  loadProcessInfo(layoutName);
-  // 延迟100ms确保工艺信息已加载
-  setTimeout(function() {
-    loadHistory(layoutName);
-  }, 100);
+  // 先加载工艺信息，解析出需要的工序后，再加载历史记录
+  var url = API_BASE + '/api/info?layout_name=' + encodeURIComponent(layoutName);
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data.success && data.info) {
+        document.getElementById('infoCard').style.display = 'block';
+        document.getElementById('infoMaterial').textContent = data.info.material || '未填写';
+        var processText = data.info.process || '未填写';
+        document.getElementById('infoProcess').textContent = processText;
+        document.getElementById('infoMold').textContent = data.info.mold || '未填写';
+        document.getElementById('infoQuantity').textContent = data.info.quantity || '未填写';
+        requiredProcesses = parseRequiredProcesses(processText);
+      } else {
+        document.getElementById('infoCard').style.display = 'block';
+        requiredProcesses = [];
+      }
+    })
+    .catch(function(err) {
+      document.getElementById('infoCard').style.display = 'none';
+      requiredProcesses = [];
+    })
+    .then(function() {
+      // 无论成功失败都继续加载历史
+      loadHistory(layoutName);
+    });
 })();
 </script>
 </body>
