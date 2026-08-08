@@ -9,25 +9,26 @@
 body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f0f2f5; min-height:100vh; -webkit-text-size-adjust:100%; }
 
 /* Header */
-.header { background:linear-gradient(135deg,#1a73e8,#0d47a1); color:#fff; padding:16px 20px 12px; text-align:center; }
+.header { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); color:#fff; padding:16px 20px 12px; text-align:center; }
 .header h1 { font-size:18px; font-weight:600; word-break:break-all; }
 .header .sub { font-size:12px; opacity:.85; margin-top:3px; }
 
 /* Info card */
-.info-card { background:#fff; border-radius:10px; padding:14px 16px; margin:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-.info-title { font-size:14px; font-weight:600; color:#1a73e8; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-.info-title::before { content:''; display:inline-block; width:3px; height:14px; background:#1a73e8; border-radius:2px; }
-.info-row { display:flex; align-items:flex-start; padding:7px 0; border-bottom:1px solid #f5f5f5; }
+.info-card { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); border-radius:14px; padding:16px 18px; margin:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); color:#fff; }
+.info-title { font-size:13px; color:rgba(255,255,255,0.6); margin-bottom:12px; letter-spacing:2px; }
+.info-row { display:flex; align-items:flex-start; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
 .info-row:last-child { border-bottom:none; }
-.info-label { font-size:13px; color:#888; width:42px; flex-shrink:0; padding-top:1px; }
-.info-value { font-size:14px; font-weight:500; color:#333; flex:1; word-break:break-all; line-height:1.7; white-space:pre-wrap; }
-.info-value.highlight { background:#fff8e1; padding:2px 8px; border-radius:4px; font-weight:600; color:#b8860b; display:inline-block; }
+.info-label { font-size:14px; color:rgba(255,255,255,0.5); width:42px; flex-shrink:0; padding-top:1px; }
+.info-label.highlight { color:#ffd700; font-weight:600; }
+.info-value { font-size:15px; font-weight:500; color:#fff; flex:1; word-break:break-all; line-height:1.7; white-space:pre-wrap; }
+.info-value.process-area { min-height:100px; }
+.info-value.highlight-val { color:#ffd700; font-weight:600; }
 
 /* Container */
 .container { max-width:1100px; margin:0 auto; padding:0 12px 16px; display:flex; gap:12px; }
-.card { background:#fff; border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-.card-title { font-size:14px; font-weight:600; margin-bottom:12px; color:#1a73e8; display:flex; align-items:center; gap:6px; }
-.card-title::before { content:''; display:inline-block; width:3px; height:14px; background:#1a73e8; border-radius:2px; }
+.card { background:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+.card-title { font-size:15px; font-weight:600; margin-bottom:14px; color:#1a1a2e; display:flex; align-items:center; gap:8px; padding-bottom:10px; border-bottom:2px solid #f0f0f0; }
+.card-title::before { content:''; display:inline-block; width:3px; height:16px; background:#1a1a2e; border-radius:2px; }
 
 /* Left: history */
 .left-panel { flex:1; min-width:0; }
@@ -40,23 +41,25 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 
 /* Right: form */
 .right-panel { width:300px; flex-shrink:0; }
-.form-group { margin-bottom:12px; }
-.form-group label { display:block; font-size:12px; color:#666; margin-bottom:4px; }
-.form-group select, .form-group input, .form-group textarea { width:100%; padding:9px 10px; border:1px solid #ddd; border-radius:7px; font-size:13px; outline:none; transition:border .2s; }
-.form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color:#1a73e8; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:13px; color:#666; margin-bottom:5px; }
+.form-group select, .form-group input, .form-group textarea { width:100%; padding:10px 12px; border:1.5px solid #e5e7eb; border-radius:10px; font-size:14px; outline:none; transition:border .2s; background:#fafafa; }
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color:#3b82f6; background:#fff; }
 .form-group textarea { resize:vertical; min-height:50px; }
-.btn-submit { width:100%; padding:11px; background:#1a73e8; color:#fff; border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; transition:background .2s; }
-.btn-submit:hover { background:#1557b0; }
-.btn-submit:disabled { background:#ccc; cursor:not-allowed; }
+.btn-submit { width:100%; padding:14px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:all .2s; margin-top:8px; box-shadow:0 4px 12px rgba(59,130,246,0.3); }
+.btn-submit:hover { background:linear-gradient(135deg,#2563eb,#1d4ed8); box-shadow:0 6px 16px rgba(59,130,246,0.4); }
+.btn-submit:active { transform:scale(0.98); }
+.btn-submit:disabled { background:#ccc; cursor:not-allowed; box-shadow:none; }
 
 /* Mobile */
 @media (max-width:768px) {
   .container { flex-direction:column; padding:0 10px 12px; }
   .right-panel { width:100%; }
-  .header h1 { font-size:16px; }
-  .info-card { margin:8px; padding:12px; }
-  .info-label { width:36px; font-size:12px; }
-  .info-value { font-size:13px; }
+  .header h1 { font-size:17px; }
+  .info-card { margin:8px 10px; padding:14px 16px; }
+  .info-label { width:36px; font-size:13px; }
+  .info-value { font-size:14px; }
+  .info-value.process-area { min-height:96px; }
 }
 
 /* Empty / loading */
@@ -64,10 +67,13 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 .loading { text-align:center; padding:18px; color:#888; font-size:13px; }
 
 /* Toast */
-.toast { position:fixed; top:50px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:9px 22px; border-radius:20px; font-size:13px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+.toast { position:fixed; top:50px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 24px; border-radius:22px; font-size:14px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
 .toast.show { opacity:1; }
-.toast.success { background:#34a853; }
-.toast.error { background:#ea4335; }
+.toast.success { background:#22c55e; }
+.toast.error { background:#ef4444; }
+
+/* Footer */
+.footer { text-align:center; padding:16px; font-size:11px; color:#ccc; }
 </style>
 </head>
 <body>
@@ -79,25 +85,37 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 
 <!-- 本单工艺要求信息卡 -->
 <div class="info-card" id="infoCard" style="display:none;">
-  <div class="info-title">本单工艺要求</div>
+  <div class="info-title">▎本单工艺要求</div>
   <div id="infoContent">
-    <div class="info-row"><span class="info-label">材质：</span><span class="info-value" id="infoMaterial">-</span></div>
-    <div class="info-row"><span class="info-label">工艺：</span><span class="info-value" id="infoProcess">-</span></div>
-    <div class="info-row"><span class="info-label">刀模：</span><span class="info-value highlight" id="infoMold">-</span></div>
-    <div class="info-row"><span class="info-label">数量：</span><span class="info-value" id="infoQuantity">-</span></div>
+    <div class="info-row">
+      <span class="info-label">材质</span>
+      <span class="info-value" id="infoMaterial">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">工艺</span>
+      <span class="info-value process-area" id="infoProcess">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label highlight">刀模</span>
+      <span class="info-value highlight-val" id="infoMold">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">数量</span>
+      <span class="info-value" id="infoQuantity">-</span>
+    </div>
   </div>
 </div>
 
 <div class="container">
   <!-- 左侧：历史工艺记录 -->
   <div class="card left-panel">
-    <div class="card-title">历史工艺记录</div>
+    <div class="card-title">📋 历史工艺记录</div>
     <div id="historyList"><div class="loading">正在加载记录...</div></div>
   </div>
 
   <!-- 右侧：工序上报 -->
   <div class="card right-panel">
-    <div class="card-title">工序上报</div>
+    <div class="card-title">📝 工序上报</div>
     <div class="form-group">
       <label>排版名称</label>
       <input type="text" id="layoutName" readonly style="background:#f8f9fa;color:#555;">
@@ -125,10 +143,12 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
   </div>
 </div>
 
+<div class="footer">印刷追溯系统 v2.0</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-// ============ API 地址（域名绑定后替换为自定义域名）============
+// ============ API 地址 ============
 var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
 
 // ============ 获取URL参数 ============
@@ -145,7 +165,7 @@ function showToast(msg, type) {
   setTimeout(function(){ t.className = 'toast'; }, 2500);
 }
 
-// ============ 加载工艺信息（从飞书表格读取本单的材质/工艺/刀模/数量）============
+// ============ 加载工艺信息 ============
 function loadProcessInfo(layoutName) {
   var url = API_BASE + '/api/info?layout_name=' + encodeURIComponent(layoutName);
   fetch(url)
@@ -158,12 +178,10 @@ function loadProcessInfo(layoutName) {
         document.getElementById('infoMold').textContent = data.info.mold || '未填写';
         document.getElementById('infoQuantity').textContent = data.info.quantity || '未填写';
       } else {
-        // 有记录但没填工艺信息，仍显示卡片但标记未填写
         document.getElementById('infoCard').style.display = 'block';
       }
     })
     .catch(function(err) {
-      // API暂时不可用时隐藏卡片，不报错
       document.getElementById('infoCard').style.display = 'none';
     });
 }
@@ -204,7 +222,6 @@ function loadHistory(layoutName) {
         html += '</div>';
       });
 
-      // 未完成工序
       var pending = allProcesses.filter(function(p){ return completedNames.indexOf(p) === -1; });
       pending.forEach(function(p) {
         html += '<div class="record-item">';
@@ -218,7 +235,6 @@ function loadHistory(layoutName) {
 
       container.innerHTML = html;
 
-      // 自动选择下一道未完成工序
       if (pending.length > 0) {
         document.getElementById('processSelect').value = pending[0];
       }
