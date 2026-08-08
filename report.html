@@ -263,7 +263,7 @@ function loadHistory(layoutName) {
           var html = '';
           records.forEach(function(rec) {
             var done = (rec.状态 === '已完成' || rec.状态 === '✅');
-            html += buildRecordHTML(rec, done);
+            html += buildRecordHTML(rec.工序, rec, done);
           });
           container.innerHTML = html;
         }
