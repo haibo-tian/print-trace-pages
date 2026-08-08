@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>印刷追溯 - 工序上报</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #1a1a2e; color: #eaeaea; min-height: 100vh;
+            display: flex; justify-content: center; align-items: flex-start; padding: 20px;
+        }
+        .container { width: 100%; max-width: 420px; }
+        h1 { text-align: center; font-size: 18px; margin-bottom: 20px; color: #fff; }
+        .card { background: #16213e; border: 1px solid #2a2a4a; border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 13px; color: #aaa; margin-bottom: 5px; font-weight: 500; }
+        input[type="text"], select {
+            width: 100%; padding: 10px 12px; background: #0f3460; border: 1px solid #2a2a4a;
+            border-radius: 7px; color: #fff; font-size: 14px; outline: none; font-family: inherit;
+        }
+        input[type="text"]:focus, select:focus { border-color: #4a9eff; }
+        input[readonly] { opacity: 0.7; cursor: default; }
+        select { cursor: pointer; appearance: auto; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .radio-item {
+            padding: 7px 14px; background: #0f3460; border: 1px solid #2a2a4a;
+            border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s;
+        }
+        .radio-item:hover { border-color: #4a9eff; }
+        .radio-item.active { background: #4a9eff; border-color: #4a9eff; color: #fff; }
+        .btn {
+            display: block; width: 100%; padding: 11px; background: #4a9eff;
+            border: none; border-radius: 7px; color: #fff; font-size: 15px;
+            font-weight: 500; cursor: pointer; transition: background 0.2s; font-family: inherit;
+        }
+        .btn:hover { background: #3a8eef; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .toast {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            padding: 10px 22px; border-radius: 8px; font-size: 14px;
+            transition: transform 0.3s; z-index: 1000; color: #fff;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: #2ecc71; }
+        .toast.error { background: #e74c3c; }
+        .error-tip { text-align: center; color: #e74c3c; font-size: 13px; margin-top: 14px; display: none; }
+        .error-tip.show { display: block; }
+        .powered { text-align: center; font-size: 11px; color: #444; margin-top: 16px; }
+        @media (max-width: 480px) { .container { padding: 0 4px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 印刷追溯 - 工序上报</h1>
+
+        <div class="card">
+            <div class="form-group">
+                <label>版面唯一ID</label>
+                <input type="text" id="layoutIdDisplay" readonly placeholder="读取中..." />
+            </div>
+            <div class="form-group">
+                <label>排版名称</label>
+                <input type="text" id="layoutNameDisplay" readonly placeholder="查询中..." />
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label>工序（单选）</label>
+                <div class="radio-group" id="processGroup">
+                    <div class="radio-item" data-value="开料">开料</div>
+                    <div class="radio-item" data-value="印刷">印刷</div>
+                    <div class="radio-item" data-value="裱纸">裱纸</div>
+                    <div class="radio-item" data-value="模切">模切</div>
+                    <div class="radio-item" data-value="粘盒">粘盒</div>
+                    <div class="radio-item" data-value="质检">质检</div>
+                    <div class="radio-item" data-value="包装">包装</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" id="submitBtn" disabled>提交上报</button>
+
+        <div class="error-tip" id="errorTip"></div>
+        <div class="powered">Powered by 印刷追溯系统</div>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function() {
+        "use strict";
+
+        var SERVER = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
+        var BACKUP_SERVER = "";
+        var layoutId = "";
+        var recordId = "";
+        var selectedProcess = "";
+
+        function smartFetch(path, options) {
+            return fetch(SERVER + path, options)
+                .then(function(resp) {
+                    if (!resp.ok) throw new Error("HTTP " + resp.status);
+                    return resp;
+                })
+                .catch(function() {
+                    return fetch(BACKUP_SERVER + path, options);
+                });
+        }
+
+        var elLayoutIdDisplay = document.getElementById("layoutIdDisplay");
+        var elLayoutNameDisplay = document.getElementById("layoutNameDisplay");
+        var elProcessGroup = document.getElementById("processGroup");
+        var elSubmitBtn = document.getElementById("submitBtn");
+        var elErrorTip = document.getElementById("errorTip");
+        var elToast = document.getElementById("toast");
+
+        function showToast(msg, type) {
+            elToast.textContent = msg;
+            elToast.className = "toast " + (type || "success") + " show";
+            setTimeout(function() { elToast.classList.remove("show"); }, 2500);
+        }
+
+        function getParam(name) {
+            var match = window.location.search.match(new RegExp("[?&]" + name + "=([^&]*)"));
+            return match ? decodeURIComponent(match[1]) : "";
+        }
+
+        function queryRecord(id) {
+            elLayoutIdDisplay.value = id;
+            elLayoutNameDisplay.placeholder = "查询中...";
+
+            smartFetch("/api/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    filter: {
+                        conjunction: "and",
+                        conditions: [{
+                            field_name: "版面唯一ID",
+                            operator: "is",
+                            value: [id]
+                        }]
+                    }
+                })
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.code === 0 && data.data && data.data.items && data.data.items.length > 0) {
+                    var item = data.data.items[0];
+                    var fields = item.fields || {};
+                    recordId = item.record_id;
+                    elLayoutNameDisplay.value = fields["排版名称"] || "未知";
+                    selectedProcess = fields["工序"] || "";
+                    updateProcessUI();
+                    elSubmitBtn.disabled = false;
+                } else {
+                    elLayoutNameDisplay.value = "未找到记录";
+                    showError("未找到版面ID对应的记录");
+                }
+            })
+            .catch(function(err) {
+                elLayoutNameDisplay.value = "查询失败";
+                showError("服务连接失败: " + err.message);
+            });
+        }
+
+        function showError(msg) {
+            elErrorTip.textContent = msg;
+            elErrorTip.classList.add("show");
+        }
+
+        function updateProcessUI() {
+            var items = elProcessGroup.querySelectorAll(".radio-item");
+            items.forEach(function(item) {
+                if (item.getAttribute("data-value") === selectedProcess) {
+                    item.classList.add("active");
+                } else {
+                    item.classList.remove("active");
+                }
+            });
+        }
+
+        elProcessGroup.addEventListener("click", function(e) {
+            var item = e.target.closest(".radio-item");
+            if (!item) return;
+            selectedProcess = item.getAttribute("data-value");
+            updateProcessUI();
+        });
+
+        elSubmitBtn.addEventListener("click", function() {
+            if (!recordId) { showToast("未找到记录", "error"); return; }
+            if (!selectedProcess) { showToast("请选择工序", "error"); return; }
+
+            elSubmitBtn.disabled = true;
+            elSubmitBtn.textContent = "提交中...";
+
+            var updateFields = {
+                "工序": selectedProcess,
+                "状态": "已上报",
+                "更新时间": Date.now()
+            };
+
+            fetch(SERVER + "/api/records/" + recordId, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fields: updateFields })
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.code === 0) {
+                    showToast("上报成功 ✓", "success");
+                } else {
+                    showToast("上报失败: " + (data.msg || ""), "error");
+                }
+                elSubmitBtn.disabled = false;
+                elSubmitBtn.textContent = "提交上报";
+            })
+            .catch(function(err) {
+                showToast("提交失败: " + err.message, "error");
+                elSubmitBtn.disabled = false;
+                elSubmitBtn.textContent = "提交上报";
+            });
+        });
+
+        layoutId = getParam("id");
+        if (layoutId) {
+            queryRecord(layoutId);
+        } else {
+            elLayoutIdDisplay.value = "未提供";
+            elLayoutNameDisplay.value = "未提供";
+            showError("缺少版面ID参数，请通过扫描二维码访问");
+        }
+
+    })();
+    </script>
+</body>
+</html>
