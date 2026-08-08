@@ -127,6 +127,17 @@
             return match ? decodeURIComponent(match[1]) : "";
         }
 
+        function extractFieldText(fieldValue, defaultValue) {
+            if (!fieldValue) return defaultValue;
+            if (typeof fieldValue === "string") return fieldValue;
+            if (Array.isArray(fieldValue) && fieldValue.length > 0) {
+                var first = fieldValue[0];
+                if (first && first.text) return first.text;
+            }
+            if (typeof fieldValue === "object" && fieldValue.text) return fieldValue.text;
+            return defaultValue;
+        }
+
         function queryRecord(id) {
             elLayoutIdDisplay.value = id;
             elLayoutNameDisplay.placeholder = "查询中...";
@@ -151,8 +162,8 @@
                     var item = data.data.items[0];
                     var fields = item.fields || {};
                     recordId = item.record_id;
-                    elLayoutNameDisplay.value = fields["排版名称"] || "未知";
-                    selectedProcess = fields["工序"] || "";
+                    elLayoutNameDisplay.value = extractFieldText(fields["排版名称"], "未知");
+                    selectedProcess = extractFieldText(fields["工序"], "");
                     updateProcessUI();
                     elSubmitBtn.disabled = false;
                 } else {
