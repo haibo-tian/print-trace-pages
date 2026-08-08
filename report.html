@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>工序流转 - 追溯查询</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f0f2f5; min-height:100vh; -webkit-text-size-adjust:100%; }
+
+/* Header */
+.header { background:linear-gradient(135deg,#1a73e8,#0d47a1); color:#fff; padding:16px 20px 12px; text-align:center; }
+.header h1 { font-size:18px; font-weight:600; word-break:break-all; }
+.header .sub { font-size:12px; opacity:.85; margin-top:3px; }
+
+/* Info card */
+.info-card { background:#fff; border-radius:10px; padding:14px 16px; margin:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+.info-title { font-size:14px; font-weight:600; color:#1a73e8; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.info-title::before { content:''; display:inline-block; width:3px; height:14px; background:#1a73e8; border-radius:2px; }
+.info-row { display:flex; align-items:flex-start; padding:7px 0; border-bottom:1px solid #f5f5f5; }
+.info-row:last-child { border-bottom:none; }
+.info-label { font-size:13px; color:#888; width:42px; flex-shrink:0; padding-top:1px; }
+.info-value { font-size:14px; font-weight:500; color:#333; flex:1; word-break:break-all; line-height:1.7; white-space:pre-wrap; }
+.info-value.highlight { background:#fff8e1; padding:2px 8px; border-radius:4px; font-weight:600; color:#b8860b; display:inline-block; }
+
+/* Container */
+.container { max-width:1100px; margin:0 auto; padding:0 12px 16px; display:flex; gap:12px; }
+.card { background:#fff; border-radius:10px; padding:14px 16px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+.card-title { font-size:14px; font-weight:600; margin-bottom:12px; color:#1a73e8; display:flex; align-items:center; gap:6px; }
+.card-title::before { content:''; display:inline-block; width:3px; height:14px; background:#1a73e8; border-radius:2px; }
+
+/* Left: history */
+.left-panel { flex:1; min-width:0; }
+.record-item { padding:10px 0; border-bottom:1px solid #f0f0f0; }
+.record-item:last-child { border-bottom:none; }
+.record-row { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+.record-status { font-size:14px; }
+.record-name { font-size:14px; font-weight:500; }
+.record-meta { font-size:11px; color:#999; padding-left:24px; }
+
+/* Right: form */
+.right-panel { width:300px; flex-shrink:0; }
+.form-group { margin-bottom:12px; }
+.form-group label { display:block; font-size:12px; color:#666; margin-bottom:4px; }
+.form-group select, .form-group input, .form-group textarea { width:100%; padding:9px 10px; border:1px solid #ddd; border-radius:7px; font-size:13px; outline:none; transition:border .2s; }
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color:#1a73e8; }
+.form-group textarea { resize:vertical; min-height:50px; }
+.btn-submit { width:100%; padding:11px; background:#1a73e8; color:#fff; border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; transition:background .2s; }
+.btn-submit:hover { background:#1557b0; }
+.btn-submit:disabled { background:#ccc; cursor:not-allowed; }
+
+/* Mobile */
+@media (max-width:768px) {
+  .container { flex-direction:column; padding:0 10px 12px; }
+  .right-panel { width:100%; }
+  .header h1 { font-size:16px; }
+  .info-card { margin:8px; padding:12px; }
+  .info-label { width:36px; font-size:12px; }
+  .info-value { font-size:13px; }
+}
+
+/* Empty / loading */
+.empty-state { text-align:center; color:#aaa; padding:24px 0; font-size:13px; line-height:1.8; }
+.loading { text-align:center; padding:18px; color:#888; font-size:13px; }
+
+/* Toast */
+.toast { position:fixed; top:50px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:9px 22px; border-radius:20px; font-size:13px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; }
+.toast.show { opacity:1; }
+.toast.success { background:#34a853; }
+.toast.error { background:#ea4335; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="pageTitle">工序流转</h1>
+  <div class="sub" id="pageSub">加载中...</div>
+</div>
+
+<!-- 本单工艺要求信息卡 -->
+<div class="info-card" id="infoCard" style="display:none;">
+  <div class="info-title">本单工艺要求</div>
+  <div id="infoContent">
+    <div class="info-row"><span class="info-label">材质：</span><span class="info-value" id="infoMaterial">-</span></div>
+    <div class="info-row"><span class="info-label">工艺：</span><span class="info-value" id="infoProcess">-</span></div>
+    <div class="info-row"><span class="info-label">刀模：</span><span class="info-value highlight" id="infoMold">-</span></div>
+    <div class="info-row"><span class="info-label">数量：</span><span class="info-value" id="infoQuantity">-</span></div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 左侧：历史工艺记录 -->
+  <div class="card left-panel">
+    <div class="card-title">历史工艺记录</div>
+    <div id="historyList"><div class="loading">正在加载记录...</div></div>
+  </div>
+
+  <!-- 右侧：工序上报 -->
+  <div class="card right-panel">
+    <div class="card-title">工序上报</div>
+    <div class="form-group">
+      <label>排版名称</label>
+      <input type="text" id="layoutName" readonly style="background:#f8f9fa;color:#555;">
+    </div>
+    <div class="form-group">
+      <label>当前工序</label>
+      <select id="processSelect">
+        <option value="印刷">印刷</option>
+        <option value="裱坑">裱坑</option>
+        <option value="烫金银/击凹凸">烫金银/击凹凸</option>
+        <option value="压纹">压纹</option>
+        <option value="模切">模切</option>
+        <option value="糊盒">糊盒</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>上报人</label>
+      <input type="text" id="reporter" placeholder="请输入你的姓名">
+    </div>
+    <div class="form-group">
+      <label>备注（可选）</label>
+      <textarea id="remark" placeholder="数量、异常情况等"></textarea>
+    </div>
+    <button class="btn-submit" id="submitBtn" onclick="submitReport()">提交工序</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ API 地址（域名绑定后替换为自定义域名）============
+var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
+
+// ============ 获取URL参数 ============
+function getUrlParam(name) {
+  var params = new URLSearchParams(window.location.search);
+  return params.get(name) || '';
+}
+
+// ============ 显示提示 ============
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(function(){ t.className = 'toast'; }, 2500);
+}
+
+// ============ 加载工艺信息（从飞书表格读取本单的材质/工艺/刀模/数量）============
+function loadProcessInfo(layoutName) {
+  var url = API_BASE + '/api/info?layout_name=' + encodeURIComponent(layoutName);
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data.success && data.info) {
+        document.getElementById('infoCard').style.display = 'block';
+        document.getElementById('infoMaterial').textContent = data.info.material || '未填写';
+        document.getElementById('infoProcess').textContent = data.info.process || '未填写';
+        document.getElementById('infoMold').textContent = data.info.mold || '未填写';
+        document.getElementById('infoQuantity').textContent = data.info.quantity || '未填写';
+      } else {
+        // 有记录但没填工艺信息，仍显示卡片但标记未填写
+        document.getElementById('infoCard').style.display = 'block';
+      }
+    })
+    .catch(function(err) {
+      // API暂时不可用时隐藏卡片，不报错
+      document.getElementById('infoCard').style.display = 'none';
+    });
+}
+
+// ============ 加载历史记录 ============
+function loadHistory(layoutName) {
+  var container = document.getElementById('historyList');
+  var url = API_BASE + '/api/records?layout_name=' + encodeURIComponent(layoutName);
+
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (!data.records || data.records.length === 0) {
+        container.innerHTML = '<div class="empty-state">暂无历史记录<br>扫码上报第一条工序</div>';
+        return;
+      }
+
+      var allProcesses = ['印刷','裱坑','烫金银/击凹凸','压纹','模切','糊盒'];
+      var completedNames = [];
+      var html = '';
+
+      data.records.forEach(function(rec) {
+        var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+        completedNames.push(rec.工序);
+        html += '<div class="record-item">';
+        html += '<div class="record-row">';
+        html += '<span class="record-status">' + (done ? '✅' : '⏳') + '</span>';
+        html += '<span class="record-name">' + rec.工序 + '</span>';
+        html += '<span class="record-name" style="margin-left:auto;color:#888;font-size:12px;">' + (rec.上报人 || '') + '</span>';
+        html += '</div>';
+        html += '<div class="record-meta">';
+        if (rec.更新时间) {
+          var d = new Date(rec.更新时间);
+          var pad = function(n){ return n < 10 ? '0'+n : n; };
+          html += pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        }
+        html += '</div>';
+        html += '</div>';
+      });
+
+      // 未完成工序
+      var pending = allProcesses.filter(function(p){ return completedNames.indexOf(p) === -1; });
+      pending.forEach(function(p) {
+        html += '<div class="record-item">';
+        html += '<div class="record-row">';
+        html += '<span class="record-status">⏳</span>';
+        html += '<span class="record-name">' + p + '</span>';
+        html += '<span class="record-name" style="margin-left:auto;color:#f9ab00;font-size:12px;">待完成</span>';
+        html += '</div>';
+        html += '</div>';
+      });
+
+      container.innerHTML = html;
+
+      // 自动选择下一道未完成工序
+      if (pending.length > 0) {
+        document.getElementById('processSelect').value = pending[0];
+      }
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div class="empty-state">加载失败，请检查网络<br><small>' + err.message + '</small></div>';
+    });
+}
+
+// ============ 提交工序 ============
+function submitReport() {
+  var layoutName = document.getElementById('layoutName').value;
+  var process = document.getElementById('processSelect').value;
+  var reporter = document.getElementById('reporter').value.trim();
+
+  if (!reporter) {
+    showToast('请填写上报人姓名', 'error');
+    return;
+  }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '提交中...';
+
+  var url = API_BASE + '/api/records';
+  var body = {
+    layout_name: layoutName,
+    process: process,
+    reporter: reporter,
+    remark: document.getElementById('remark').value.trim()
+  };
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      showToast('工序上报成功！', 'success');
+      document.getElementById('remark').value = '';
+      loadHistory(layoutName);
+    } else {
+      showToast('提交失败: ' + (data.message || '未知错误'), 'error');
+    }
+  })
+  .catch(function(err) {
+    showToast('提交失败: ' + err.message, 'error');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = '提交工序';
+  });
+}
+
+// ============ 初始化 ============
+(function init() {
+  var layoutName = getUrlParam('排版名称');
+  if (!layoutName) {
+    document.getElementById('pageTitle').textContent = '参数缺失';
+    document.getElementById('pageSub').textContent = 'URL中缺少「排版名称」参数';
+    document.getElementById('historyList').innerHTML = '<div class="empty-state">请通过扫描产品二维码进入</div>';
+    return;
+  }
+
+  document.getElementById('layoutName').value = layoutName;
+  document.getElementById('pageTitle').textContent = layoutName + ' 工序流转';
+  document.getElementById('pageSub').textContent = '扫码追溯 · 工序管理';
+
+  loadProcessInfo(layoutName);
+  loadHistory(layoutName);
+})();
+</script>
+</body>
+</html>
