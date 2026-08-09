@@ -439,10 +439,10 @@ function submitReport() {
 
 // ============ 初始化 ============
 (function init() {
-  var layoutName = getUrlParam('排版名称');
+  var layoutName = getUrlParam('name') || getUrlParam('排版名称');
   if (!layoutName) {
     document.getElementById('pageTitle').textContent = '参数缺失';
-    document.getElementById('pageSub').textContent = 'URL中缺少「排版名称」参数';
+    document.getElementById('pageSub').textContent = 'URL中缺少排版名称参数（name）';
     document.getElementById('historyList').innerHTML = '<div class="empty-state">请通过扫描产品二维码进入</div>';
     return;
   }
