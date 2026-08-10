@@ -16,7 +16,10 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 
 /* ===== Info Card ===== */
 .info-card { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 100%); border-radius:0; padding:18px 22px; margin:0; color:#fff; }
-.info-card-inner { }
+.info-card-inner { display:flex; align-items:flex-start; gap:12px; }
+.info-card-text { flex:1; min-width:0; }
+.info-card-deco { width:140px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.info-card-deco img { width:100%; max-height:140px; object-fit:contain; border-radius:8px; opacity:0.9; }
 .info-card-title { font-size:14px; font-weight:600; margin-bottom:14px; padding-left:10px; border-left:3px solid rgba(255,255,255,0.7); letter-spacing:1px; }
 .info-row { display:flex; align-items:flex-start; padding:6px 0; }
 .info-label { font-size:14px; color:rgba(255,255,255,0.65); width:80px; flex-shrink:0; padding-top:2px; white-space:nowrap; }
@@ -58,6 +61,9 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
   .header h1 { font-size:22px; }
   .header h1 .sub-line { font-size:22px; }
   .info-card { padding:16px 18px; }
+  .info-card-inner { gap:8px; }
+  .info-card-deco { width:100px; }
+  .info-card-deco img { max-height:110px; }
   .info-label { width:60px; font-size:13px; }
   .info-value { font-size:13px; }
   .left-panel { padding:16px 18px; }
@@ -88,28 +94,33 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 <!-- 本单工艺要求信息卡 -->
 <div class="info-card" id="infoCard" style="display:none;">
   <div class="info-card-inner">
-    <div class="info-card-title" id="infoTitle">本单工艺要求</div>
-    <div class="info-row">
-      <span class="info-label">排版名称：</span>
-      <span class="info-value" id="infoLayoutName">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">材质：</span>
-      <span class="info-value" id="infoMaterial">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">工艺：</span>
-      <span class="info-value" id="infoProcess">-</span>
-    </div>
-    <div class="info-row" style="display:flex; gap:24px;">
-      <div style="display:flex; align-items:flex-start; flex:1;">
-        <span class="info-label">刀模编号：</span>
-        <span class="info-value" id="infoMold">-</span>
+    <div class="info-card-text">
+      <div class="info-card-title" id="infoTitle">本单工艺要求</div>
+      <div class="info-row">
+        <span class="info-label">排版名称：</span>
+        <span class="info-value" id="infoLayoutName">-</span>
       </div>
-      <div style="display:flex; align-items:flex-start; flex:1;">
-        <span class="info-label">印刷数量：</span>
-        <span class="info-value" id="infoQuantity">-</span>
+      <div class="info-row">
+        <span class="info-label">材质：</span>
+        <span class="info-value" id="infoMaterial">-</span>
       </div>
+      <div class="info-row">
+        <span class="info-label">工艺：</span>
+        <span class="info-value" id="infoProcess">-</span>
+      </div>
+      <div class="info-row" style="display:flex; gap:24px;">
+        <div style="display:flex; align-items:flex-start; flex:1;">
+          <span class="info-label">刀模编号：</span>
+          <span class="info-value" id="infoMold">-</span>
+        </div>
+        <div style="display:flex; align-items:flex-start; flex:1;">
+          <span class="info-label">印刷数量：</span>
+          <span class="info-value" id="infoQuantity">-</span>
+        </div>
+      </div>
+    </div>
+    <div class="info-card-deco">
+      <img src="img/shengyi_xinglong.png" alt="生意兴隆">
     </div>
   </div>
 </div>
