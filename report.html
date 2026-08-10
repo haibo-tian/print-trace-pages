@@ -15,7 +15,7 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 .header .nav-sub { font-size:13px; opacity:.75; margin-top:6px; letter-spacing:.5px; text-align:center; }
 
 /* ===== Info Card ===== */
-.info-card { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 100%); border-radius:0; padding:18px 22px; margin:0; color:#fff; position:relative; overflow:hidden; }
+.info-card { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 50%,#0d5e5e 100%); border-radius:0; padding:18px 22px; margin:0; color:#fff; position:relative; overflow:hidden; }
 .info-card::before { content:''; position:absolute; inset:0; background:url('img/shengyi_xinglong.png') center center/contain no-repeat; opacity:0.85; pointer-events:none; z-index:0; }
 .info-card-inner { position:relative; z-index:1; display:flex; align-items:flex-start; gap:12px; }
 .info-card-text { flex:1; min-width:0; }
@@ -480,11 +480,12 @@ function buildRecordHTML(displayName, rec, isDone, isExtra) {
     if (reporterName) html += ' ' + reporterName;
     if (timeStr) html += ' ' + timeStr;
     html += ')</span>';
-  } else if (reporterName || timeStr) {
-    html += '<span class="record-meta">(';
-    if (reporterName) html += reporterName;
-    if (reporterName && timeStr) html += ' ' + timeStr;
-    html += ')</span>';
+  } else {
+    var extra = '';
+    if (reporterName) extra += reporterName;
+    if (reporterName && timeStr) extra += ' ' + timeStr;
+    else if (timeStr) extra += timeStr;
+    if (extra) html += '<span class="record-meta">(' + extra + ')</span>';
   }
   html += '</div>';
   html += '</div>';
