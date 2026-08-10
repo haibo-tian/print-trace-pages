@@ -79,7 +79,7 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 <body>
 
 <div class="header">
-  <h1 id="pageTitle">工序流转</h1>
+  <h1 id="pageTitle">工序流转 - 追溯查询</h1>
   <div class="sub" id="pageSub">加载中...</div>
 </div>
 
@@ -152,7 +152,6 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
 var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
 
 // ============ 工序同义词映射 ============
-// key = 标准工序名, value = 可能的叫法列表
 var PROCESS_SYNONYMS = {
   '印刷': ['印刷', '印', '彩印', '胶印', '丝印', 'UV印刷', 'UV印'],
   '覆膜': ['覆膜', '覆哑膜', '覆光膜', '过胶', '哑胶', '光胶', '过哑胶', '过光胶', '贴膜', '裱膜', '哑膜', '光膜'],
@@ -163,32 +162,26 @@ var PROCESS_SYNONYMS = {
   '糊盒': ['糊盒', '粘盒', '粘', '糊', '粘合', '成型', '折盒']
 };
 
-// 全局变量：当前排版需要的标准工序列表
 var requiredProcesses = [];
-// 已完成的标准工序
 var completedStandardProcesses = [];
 
-// ============ 同义词匹配：将工人输入转为标准工序名 ============
 function normalizeProcessName(input) {
   if (!input) return '';
   var trimmed = input.trim();
   for (var stdName in PROCESS_SYNONYMS) {
     var aliases = PROCESS_SYNONYMS[stdName];
     for (var i = 0; i < aliases.length; i++) {
-      // 精确匹配
       if (trimmed === aliases[i]) return stdName;
     }
-    // 模糊包含匹配（如输入"覆哑膜"包含"覆膜"的同义词"哑膜"）
     for (var i = 0; i < aliases.length; i++) {
       if (trimmed.indexOf(aliases[i]) >= 0 || aliases[i].indexOf(trimmed) >= 0) {
         return stdName;
       }
     }
   }
-  return trimmed; // 无法识别则原样返回
+  return trimmed;
 }
 
-// ============ 从工艺要求文本中解析出需要的标准工序 ============
 function parseRequiredProcesses(processText) {
   if (!processText || processText === '未填写') return [];
   var found = [];
@@ -197,19 +190,17 @@ function parseRequiredProcesses(processText) {
     for (var i = 0; i < aliases.length; i++) {
       if (processText.indexOf(aliases[i]) >= 0) {
         found.push(stdName);
-        break; // 匹配到一个别名就够了
+        break;
       }
     }
   }
   return found;
 }
 
-// ============ 辅助：从飞书 API 返回的对象数组中提取文本 ============
 function extractText(val) {
   if (!val) return '未填写';
   if (typeof val === 'string') return val;
   if (Array.isArray(val) && val.length > 0) {
-    // 飞书多行文本字段返回 [{text: "...", type: "text"}]
     var parts = [];
     for (var i = 0; i < val.length; i++) {
       if (val[i] && val[i].text !== undefined) {
@@ -223,13 +214,29 @@ function extractText(val) {
   return '未填写';
 }
 
-// ============ 获取URL参数 ============
+// 获取URL参数 - 支持"排版名称"和"name"两种参数名
 function getUrlParam(name) {
   var params = new URLSearchParams(window.location.search);
-  return params.get(name) || '';
+  var val = params.get(name);
+  if (val) return val;
+  return '';
 }
 
-// ============ 显示提示 ============
+function getLayoutName() {
+  // 优先用中文参数名，其次用英文 name（兼容旧版二维码）
+  var params = new URLSearchParams(window.location.search);
+  var name = params.get('排版名称');
+  if (name) return name;
+  name = params.get('name');
+  if (name) return name;
+  // 尝试从 hash 中获取
+  var hash = window.location.hash;
+  if (hash && hash.indexOf('name=') >= 0) {
+    return decodeURIComponent(hash.split('name=')[1].split('&')[0]);
+  }
+  return '';
+}
+
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
@@ -237,7 +244,6 @@ function showToast(msg, type) {
   setTimeout(function(){ t.className = 'toast'; }, 2500);
 }
 
-// ============ 加载工艺信息 ============
 function loadProcessInfo(layoutName) {
   var url = API_BASE + '/api/info?layout_name=' + encodeURIComponent(layoutName);
   fetch(url)
@@ -250,11 +256,9 @@ function loadProcessInfo(layoutName) {
         document.getElementById('infoProcess').textContent = processText;
         document.getElementById('infoMold').textContent = extractText(data.info.mold);
         document.getElementById('infoQuantity').textContent = extractText(data.info.quantity);
-
-        // 解析工艺要求，得到本单需要的标准工序列表
         requiredProcesses = parseRequiredProcesses(processText);
       } else {
-        document.getElementById('infoCard').style.display = 'block';
+        document.getElementById('infoCard').style.display = 'none';
         requiredProcesses = [];
       }
     })
@@ -264,7 +268,6 @@ function loadProcessInfo(layoutName) {
     });
 }
 
-// ============ 加载历史记录 ============
 function loadHistory(layoutName) {
   var container = document.getElementById('historyList');
   var url = API_BASE + '/api/records?layout_name=' + encodeURIComponent(layoutName);
@@ -274,7 +277,6 @@ function loadHistory(layoutName) {
     .then(function(data) {
       var records = data.records || [];
 
-      // 如果没有解析到工艺要求，显示所有记录 + 提示
       if (requiredProcesses.length === 0) {
         if (records.length === 0) {
           container.innerHTML = '<div class="empty-state">暂无历史记录<br>扫码上报第一条工序</div>';
@@ -289,20 +291,17 @@ function loadHistory(layoutName) {
         return;
       }
 
-      // 有工艺要求时：智能匹配
       completedStandardProcesses = [];
-      var matchedRecords = {}; // stdName -> record
+      var matchedRecords = {};
 
       records.forEach(function(rec) {
         var stdName = normalizeProcessName(rec.工序);
         var done = (rec.状态 === '已完成' || rec.状态 === '✅');
 
-        // 检查是否匹配到工艺要求中的某个工序
         var matched = false;
         for (var i = 0; i < requiredProcesses.length; i++) {
           if (requiredProcesses[i] === stdName) {
             matched = true;
-            // 保留最新的一条记录
             if (!matchedRecords[stdName] || rec.更新时间 > matchedRecords[stdName].更新时间) {
               matchedRecords[stdName] = rec;
             }
@@ -313,9 +312,7 @@ function loadHistory(layoutName) {
           }
         }
 
-        // 不在工艺要求中的记录也显示（不归类到待完成）
         if (!matched) {
-          // 未归类的记录也显示
           var key = '__extra__' + rec.工序;
           if (!matchedRecords[key]) {
             matchedRecords[key] = rec;
@@ -323,10 +320,8 @@ function loadHistory(layoutName) {
         }
       });
 
-      // 构建显示列表
       var html = '';
 
-      // 1. 先显示已完成和进行中的（按工艺要求顺序）
       requiredProcesses.forEach(function(stdName) {
         if (matchedRecords[stdName]) {
           var rec = matchedRecords[stdName];
@@ -335,7 +330,6 @@ function loadHistory(layoutName) {
         }
       });
 
-      // 2. 显示未完成的工序
       var pendingProcs = requiredProcesses.filter(function(p) {
         return completedStandardProcesses.indexOf(p) === -1;
       });
@@ -349,7 +343,6 @@ function loadHistory(layoutName) {
         html += '</div>';
       });
 
-      // 3. 显示不在工艺要求中的额外记录
       for (var key in matchedRecords) {
         if (key.indexOf('__extra__') === 0) {
           var rec = matchedRecords[key];
@@ -360,7 +353,6 @@ function loadHistory(layoutName) {
 
       container.innerHTML = html;
 
-      // 更新下拉框：只显示未完成的工艺要求工序
       var select = document.getElementById('processSelect');
       select.innerHTML = '';
       pendingProcs.forEach(function(p) {
@@ -369,7 +361,6 @@ function loadHistory(layoutName) {
         opt.textContent = p;
         select.appendChild(opt);
       });
-      // 如果没有待完成的，加一个"全部完成"选项
       if (pendingProcs.length === 0) {
         var opt = document.createElement('option');
         opt.value = '';
@@ -382,7 +373,6 @@ function loadHistory(layoutName) {
     });
 }
 
-// ============ 构建单条记录HTML ============
 function buildRecordHTML(displayName, rec, isDone, isExtra) {
   var html = '<div class="record-item"' + (isExtra ? ' style="opacity:0.6"' : '') + '>';
   html += '<div class="record-row">';
@@ -404,12 +394,15 @@ function buildRecordHTML(displayName, rec, isDone, isExtra) {
   return html;
 }
 
-// ============ 提交工序 ============
 function submitReport() {
   var layoutName = document.getElementById('layoutName').value;
   var process = document.getElementById('processSelect').value;
   var reporter = document.getElementById('reporter').value.trim();
 
+  if (!layoutName) {
+    showToast('排版名称为空，请检查二维码URL', 'error');
+    return;
+  }
   if (!process) {
     showToast('所有工序已完成，无需上报', 'error');
     return;
@@ -423,7 +416,6 @@ function submitReport() {
   btn.disabled = true;
   btn.textContent = '提交中...';
 
-  // 提交时使用标准工序名（已经由下拉框保证）
   var url = API_BASE + '/api/records';
   var body = {
     layout_name: layoutName,
@@ -448,7 +440,7 @@ function submitReport() {
     }
   })
   .catch(function(err) {
-    showToast('提交失败: ' + err.message, 'error');
+    showToast('提交失败: 网络错误 - ' + err.message, 'error');
   })
   .finally(function() {
     btn.disabled = false;
@@ -458,11 +450,12 @@ function submitReport() {
 
 // ============ 初始化 ============
 (function init() {
-  var layoutName = getUrlParam('排版名称');
+  var layoutName = getLayoutName();
   if (!layoutName) {
     document.getElementById('pageTitle').textContent = '参数缺失';
     document.getElementById('pageSub').textContent = 'URL中缺少「排版名称」参数';
     document.getElementById('historyList').innerHTML = '<div class="empty-state">请通过扫描产品二维码进入</div>';
+    document.querySelector('.right-panel').style.display = 'none';
     return;
   }
 
@@ -470,32 +463,8 @@ function submitReport() {
   document.getElementById('pageTitle').textContent = layoutName + ' 工序流转';
   document.getElementById('pageSub').textContent = '扫码追溯 · 工序管理';
 
-  // 先加载工艺信息，解析出需要的工序后，再加载历史记录
-  var url = API_BASE + '/api/info?layout_name=' + encodeURIComponent(layoutName);
-  fetch(url)
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-      if (data.success && data.info) {
-        document.getElementById('infoCard').style.display = 'block';
-        document.getElementById('infoMaterial').textContent = extractText(data.info.material);
-        var processText = extractText(data.info.process);
-        document.getElementById('infoProcess').textContent = processText;
-        document.getElementById('infoMold').textContent = extractText(data.info.mold);
-        document.getElementById('infoQuantity').textContent = extractText(data.info.quantity);
-        requiredProcesses = parseRequiredProcesses(processText);
-      } else {
-        document.getElementById('infoCard').style.display = 'block';
-        requiredProcesses = [];
-      }
-    })
-    .catch(function(err) {
-      document.getElementById('infoCard').style.display = 'none';
-      requiredProcesses = [];
-    })
-    .then(function() {
-      // 无论成功失败都继续加载历史
-      loadHistory(layoutName);
-    });
+  loadProcessInfo(layoutName);
+  loadHistory(layoutName);
 })();
 </script>
 </body>
