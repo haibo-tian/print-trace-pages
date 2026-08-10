@@ -204,6 +204,25 @@ function parseRequiredProcesses(processText) {
   return found;
 }
 
+// ============ 辅助：从飞书 API 返回的对象数组中提取文本 ============
+function extractText(val) {
+  if (!val) return '未填写';
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val) && val.length > 0) {
+    // 飞书多行文本字段返回 [{text: "...", type: "text"}]
+    var parts = [];
+    for (var i = 0; i < val.length; i++) {
+      if (val[i] && val[i].text !== undefined) {
+        parts.push(val[i].text);
+      } else if (typeof val[i] === 'string') {
+        parts.push(val[i]);
+      }
+    }
+    return parts.length > 0 ? parts.join('') : '未填写';
+  }
+  return '未填写';
+}
+
 // ============ 获取URL参数 ============
 function getUrlParam(name) {
   var params = new URLSearchParams(window.location.search);
@@ -226,11 +245,11 @@ function loadProcessInfo(layoutName) {
     .then(function(data) {
       if (data.success && data.info) {
         document.getElementById('infoCard').style.display = 'block';
-        document.getElementById('infoMaterial').textContent = data.info.material || '未填写';
-        var processText = data.info.process || '未填写';
+        document.getElementById('infoMaterial').textContent = extractText(data.info.material);
+        var processText = extractText(data.info.process);
         document.getElementById('infoProcess').textContent = processText;
-        document.getElementById('infoMold').textContent = data.info.mold || '未填写';
-        document.getElementById('infoQuantity').textContent = data.info.quantity || '未填写';
+        document.getElementById('infoMold').textContent = extractText(data.info.mold);
+        document.getElementById('infoQuantity').textContent = extractText(data.info.quantity);
 
         // 解析工艺要求，得到本单需要的标准工序列表
         requiredProcesses = parseRequiredProcesses(processText);
@@ -439,10 +458,10 @@ function submitReport() {
 
 // ============ 初始化 ============
 (function init() {
-  var layoutName = getUrlParam('name') || getUrlParam('排版名称');
+  var layoutName = getUrlParam('排版名称');
   if (!layoutName) {
     document.getElementById('pageTitle').textContent = '参数缺失';
-    document.getElementById('pageSub').textContent = 'URL中缺少排版名称参数（name）';
+    document.getElementById('pageSub').textContent = 'URL中缺少「排版名称」参数';
     document.getElementById('historyList').innerHTML = '<div class="empty-state">请通过扫描产品二维码进入</div>';
     return;
   }
@@ -458,11 +477,11 @@ function submitReport() {
     .then(function(data) {
       if (data.success && data.info) {
         document.getElementById('infoCard').style.display = 'block';
-        document.getElementById('infoMaterial').textContent = data.info.material || '未填写';
-        var processText = data.info.process || '未填写';
+        document.getElementById('infoMaterial').textContent = extractText(data.info.material);
+        var processText = extractText(data.info.process);
         document.getElementById('infoProcess').textContent = processText;
-        document.getElementById('infoMold').textContent = data.info.mold || '未填写';
-        document.getElementById('infoQuantity').textContent = data.info.quantity || '未填写';
+        document.getElementById('infoMold').textContent = extractText(data.info.mold);
+        document.getElementById('infoQuantity').textContent = extractText(data.info.quantity);
         requiredProcesses = parseRequiredProcesses(processText);
       } else {
         document.getElementById('infoCard').style.display = 'block';
