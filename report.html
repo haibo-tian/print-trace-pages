@@ -172,6 +172,53 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
 
 // ============ 工序关键词匹配映射（用于将提交记录匹配到工艺字段中的具体项） ============
+// 飞书 SingleSelect 标准选项名（工序字段只接受这些值）
+var FEISHU_PROCESS_OPTIONS = [
+  '开始生产', '印刷', '哑胶/光胶/哑油/光油', '烫金/烫银',
+  '击凸/击凹', '局部UV', '坑/对裱', '模切', '待出货'
+];
+
+// 关键词 → 飞书标准选项 映射（用于将工艺原文片段映射为可提交的值）
+var KEYWORD_TO_OPTION = {
+  '印刷': '印刷', '印': '印刷', '彩印': '印刷', '胶印': '印刷', '丝印': '印刷',
+  '哑胶': '哑胶/光胶/哑油/光油', '覆哑膜': '哑胶/光胶/哑油/光油', '过哑胶': '哑胶/光胶/哑油/光油', '过哑膜': '哑胶/光胶/哑油/光油',
+  '光胶': '哑胶/光胶/哑油/光油', '覆光膜': '哑胶/光胶/哑油/光油', '过光胶': '哑胶/光胶/哑油/光油', '过光膜': '哑胶/光胶/哑油/光油',
+  '哑油': '哑胶/光胶/哑油/光油', '过哑油': '哑胶/光胶/哑油/光油',
+  '光油': '哑胶/光胶/哑油/光油', '过光油': '哑胶/光胶/哑油/光油',
+  '吸塑油': '哑胶/光胶/哑油/光油', '吸塑': '哑胶/光胶/哑油/光油',
+  '烫金': '烫金/烫银', '烫印': '烫金/烫银', '电化铝': '烫金/烫银',
+  '烫银': '烫金/烫银',
+  '击凸': '击凸/击凹', '击凹凸': '击凸/击凹', '凹凸': '击凸/击凹',
+  '击凹': '击凸/击凹',
+  '局部UV': '局部UV', 'UV': '局部UV', 'uv': '局部UV',
+  '裱坑': '坑/对裱', '裱纸': '坑/对裱', '裱瓦': '坑/对裱', '贴坑': '坑/对裱',
+  '对裱': '坑/对裱', '裱楞': '坑/对裱',
+  '模切': '模切', '啤': '模切', '啤切': '模切', '冲切': '模切',
+  '待出货': '待出货', '出货': '待出货', '发货': '待出货'
+};
+
+// 将工艺原文片段映射为飞书单选选项名
+function craftSegmentToOption(seg) {
+  var core = seg.replace(/^(正面|背面|正面过|背面过)/, '').trim().toLowerCase();
+  // 精确匹配关键词
+  for (var kw in KEYWORD_TO_OPTION) {
+    if (core === kw.toLowerCase()) return KEYWORD_TO_OPTION[kw];
+  }
+  // 包含匹配
+  for (var kw2 in KEYWORD_TO_OPTION) {
+    if (kw2.length >= 2 && core.indexOf(kw2.toLowerCase()) >= 0) return KEYWORD_TO_OPTION[kw2];
+  }
+  // 含"裱"字的归入坑/对裱
+  if (core.indexOf('裱') >= 0) return '坑/对裱';
+  // 含"胶"字的归入哑胶/光胶/哑油/光油
+  if (core.indexOf('胶') >= 0) return '哑胶/光胶/哑油/光油';
+  // 已是标准选项
+  for (var i = 0; i < FEISHU_PROCESS_OPTIONS.length; i++) {
+    if (core === FEISHU_PROCESS_OPTIONS[i].toLowerCase()) return FEISHU_PROCESS_OPTIONS[i];
+  }
+  return null; // 无法映射
+}
+
 var PROCESS_KEYWORDS = {
   '印刷': ['印刷', '印', '彩印', '胶印', '丝印'],
   '哑胶': ['哑胶', '覆哑膜', '过哑胶'],
@@ -220,6 +267,14 @@ function processItemMatches(submittedProcess, craftItem) {
   // 去掉正面/背面前缀后再比
   var ciCore = ci.replace(/^(正面|背面)/, '');
   if (sp.indexOf(ciCore) >= 0 || ciCore.indexOf(sp) >= 0) return true;
+  // 若提交的是飞书标准选项名（如"坑/对裱"），拆分后逐个匹配工艺段
+  if (sp.indexOf('/') >= 0) {
+    var parts = sp.split('/');
+    for (var p = 0; p < parts.length; p++) {
+      var part = parts[p].trim().toLowerCase();
+      if (part && ciCore.indexOf(part) >= 0) return true;
+    }
+  }
   // 通过关键词映射匹配
   for (var keyword in PROCESS_KEYWORDS) {
     var synonyms = PROCESS_KEYWORDS[keyword];
@@ -230,6 +285,9 @@ function processItemMatches(submittedProcess, craftItem) {
     }
     if (craftHas && submitHas) return true;
   }
+  // 兜底：通过 craftSegmentToOption 映射比较
+  var mappedOption = craftSegmentToOption(craftItem);
+  if (mappedOption && sp === mappedOption.toLowerCase()) return true;
   return false;
 }
 
@@ -373,12 +431,17 @@ function loadHistory(layoutName) {
       container.innerHTML = html;
 
       // 更新工序下拉框：只显示待完成的工艺项
+      // 值映射为飞书标准选项名（防止 TextFieldConvFail），显示仍为原文
       var select = document.getElementById('processSelect');
       select.innerHTML = '';
+      var addedOptions = {}; // 去重：同一标准选项只加一次
       pending.forEach(function(p) {
+        var mapped = craftSegmentToOption(p) || p;
+        if (addedOptions[mapped]) return;
+        addedOptions[mapped] = true;
         var opt = document.createElement('option');
-        opt.value = p;
-        opt.textContent = p;
+        opt.value = mapped; // 提交时用标准选项名
+        opt.textContent = p; // 显示原文
         select.appendChild(opt);
       });
       if (pending.length === 0) {
