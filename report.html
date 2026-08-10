@@ -88,7 +88,11 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 <!-- 本单工艺要求信息卡 -->
 <div class="info-card" id="infoCard" style="display:none;">
   <div class="info-card-inner">
-    <div class="info-card-title">本单工艺要求</div>
+    <div class="info-card-title" id="infoTitle">本单工艺要求</div>
+    <div class="info-row">
+      <span class="info-label">排版名称：</span>
+      <span class="info-value" id="infoLayoutName">-</span>
+    </div>
     <div class="info-row">
       <span class="info-label">材质：</span>
       <span class="info-value" id="infoMaterial">-</span>
@@ -274,6 +278,7 @@ function loadProcessInfo(layoutName) {
     .then(function(data) {
       if (data.success && data.info) {
         document.getElementById('infoCard').style.display = 'block';
+        document.getElementById('infoLayoutName').textContent = layoutName;
         document.getElementById('infoMaterial').textContent = extractText(data.info.material);
         var processText = extractText(data.info.process);
         document.getElementById('infoProcess').textContent = processText;
