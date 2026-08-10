@@ -347,14 +347,14 @@ function loadProcessInfo(layoutName) {
   return fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(data) {
-      if (data.success && data.info) {
+      if (data.success && data.data) {
         document.getElementById('infoCard').style.display = 'block';
-        document.getElementById('infoLayoutName').textContent = layoutName;
-        document.getElementById('infoMaterial').textContent = extractText(data.info.material);
-        var processText = extractText(data.info.process);
+        document.getElementById('infoLayoutName').textContent = data.data['排版名称'] || layoutName;
+        document.getElementById('infoMaterial').textContent = data.data['材质'] || '未填写';
+        var processText = data.data['工艺'] || '未填写';
         document.getElementById('infoProcess').textContent = processText;
-        document.getElementById('infoMold').textContent = extractText(data.info.mold);
-        document.getElementById('infoQuantity').textContent = extractText(data.info.quantity);
+        document.getElementById('infoMold').textContent = data.data['刀模'] || '未填写';
+        document.getElementById('infoQuantity').textContent = data.data['数量'] || '未填写';
         requiredProcesses = parseCraftText(processText);
       } else {
         document.getElementById('infoCard').style.display = 'none';
