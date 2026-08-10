@@ -305,7 +305,8 @@ function loadHistory(layoutName) {
         } else {
           var html = '';
           records.forEach(function(rec) {
-            var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+            var statusText = extractText(rec.状态);
+            var done = (statusText === '已完成' || statusText === '✅');
             html += buildRecordHTML(rec.工序, rec, done);
           });
           container.innerHTML = html;
@@ -319,7 +320,8 @@ function loadHistory(layoutName) {
       var extraRecs = [];
 
       records.forEach(function(rec) {
-        var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+        var statusText = extractText(rec.状态);
+        var done = (statusText === '已完成' || statusText === '✅');
         var matched = false;
 
         for (var i = 0; i < requiredProcesses.length; i++) {
@@ -357,7 +359,8 @@ function loadHistory(layoutName) {
       });
 
       extraRecs.forEach(function(rec) {
-        var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+        var statusText = extractText(rec.状态);
+        var done = (statusText === '已完成' || statusText === '✅');
         html += buildRecordHTML(rec.工序, rec, done, true);
       });
 
