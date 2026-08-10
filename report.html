@@ -6,124 +6,123 @@
 <title>工序流转 - 追溯查询</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f0f2f5; min-height:100vh; -webkit-text-size-adjust:100%; }
+body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif; background:#f5f6fa; min-height:100vh; -webkit-text-size-adjust:100%; }
 
-/* Header */
-.header { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); color:#fff; padding:16px 20px 12px; text-align:center; }
-.header h1 { font-size:18px; font-weight:600; word-break:break-all; }
-.header .sub { font-size:12px; opacity:.85; margin-top:3px; }
+/* ===== Header ===== */
+.header { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 50%,#0d5e5e 100%); color:#fff; padding:20px 24px 18px; }
+.header h1 { font-size:26px; font-weight:700; line-height:1.3; letter-spacing:1px; }
+.header h1 .sub-line { font-size:26px; font-weight:700; }
+.header .nav-sub { font-size:13px; opacity:.75; margin-top:6px; letter-spacing:.5px; }
 
-/* Info card */
-.info-card { background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); border-radius:14px; padding:16px 18px; margin:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); color:#fff; }
-.info-title { font-size:13px; color:rgba(255,255,255,0.6); margin-bottom:12px; letter-spacing:2px; }
-.info-row { display:flex; align-items:flex-start; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
-.info-row:last-child { border-bottom:none; }
-.info-label { font-size:14px; color:rgba(255,255,255,0.5); width:42px; flex-shrink:0; padding-top:1px; }
-.info-label.highlight { color:#ffd700; font-weight:600; }
-.info-value { font-size:15px; font-weight:500; color:#fff; flex:1; word-break:break-all; line-height:1.7; white-space:pre-wrap; }
-.info-value.process-area { min-height:100px; }
-.info-value.highlight-val { color:#ffd700; font-weight:600; }
+/* ===== Info Card ===== */
+.info-card { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 100%); border-radius:0; padding:18px 22px; margin:0; color:#fff; }
+.info-card-inner { }
+.info-card-title { font-size:14px; font-weight:600; margin-bottom:14px; padding-left:10px; border-left:3px solid rgba(255,255,255,0.7); letter-spacing:1px; }
+.info-row { display:flex; align-items:flex-start; padding:6px 0; }
+.info-label { font-size:14px; color:rgba(255,255,255,0.65); width:72px; flex-shrink:0; padding-top:2px; }
+.info-value { font-size:14px; font-weight:500; color:#fff; flex:1; word-break:break-all; line-height:1.6; white-space:pre-wrap; }
 
-/* Container */
-.container { max-width:1100px; margin:0 auto; padding:0 12px 16px; display:flex; gap:12px; }
-.card { background:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
-.card-title { font-size:15px; font-weight:600; margin-bottom:14px; color:#1a1a2e; display:flex; align-items:center; gap:8px; padding-bottom:10px; border-bottom:2px solid #f0f0f0; }
-.card-title::before { content:''; display:inline-block; width:3px; height:16px; background:#1a1a2e; border-radius:2px; }
+/* ===== Main Layout ===== */
+.main-wrapper { max-width:1100px; margin:0 auto; display:flex; gap:0; min-height:calc(100vh - 200px); }
 
-/* Left: history */
-.left-panel { flex:1; min-width:0; }
-.record-item { padding:10px 0; border-bottom:1px solid #f0f0f0; }
+/* Left: History */
+.left-panel { flex:1; min-width:0; padding:20px 22px; background:#fff; }
+.section-title { font-size:16px; font-weight:600; color:#222; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+.section-title .icon { font-size:18px; }
+.record-item { padding:12px 0; border-bottom:1px solid #f0f0f0; }
 .record-item:last-child { border-bottom:none; }
-.record-row { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
-.record-status { font-size:14px; }
-.record-name { font-size:14px; font-weight:500; }
-.record-meta { font-size:11px; color:#999; padding-left:24px; }
+.record-row { display:flex; align-items:center; gap:8px; }
+.record-icon { font-size:16px; flex-shrink:0; width:22px; text-align:center; }
+.record-name { font-size:15px; font-weight:500; color:#222; }
+.record-name.pending { color:#f9ab00; }
+.record-meta { font-size:13px; color:#888; margin-left:6px; }
+.record-extra { font-size:11px; color:#aaa; margin-left:4px; }
 
-/* Right: form */
-.right-panel { width:300px; flex-shrink:0; }
-.form-group { margin-bottom:14px; }
-.form-group label { display:block; font-size:13px; color:#666; margin-bottom:5px; }
-.form-group select, .form-group input, .form-group textarea { width:100%; padding:10px 12px; border:1.5px solid #e5e7eb; border-radius:10px; font-size:14px; outline:none; transition:border .2s; background:#fafafa; }
-.form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color:#3b82f6; background:#fff; }
-.form-group textarea { resize:vertical; min-height:50px; }
-.btn-submit { width:100%; padding:14px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:all .2s; margin-top:8px; box-shadow:0 4px 12px rgba(59,130,246,0.3); }
-.btn-submit:hover { background:linear-gradient(135deg,#2563eb,#1d4ed8); box-shadow:0 6px 16px rgba(59,130,246,0.4); }
-.btn-submit:active { transform:scale(0.98); }
+/* Right: Form */
+.right-panel { width:320px; flex-shrink:0; padding:20px 22px; background:#f8f9fb; border-left:1px solid #eee; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:14px; color:#555; margin-bottom:6px; font-weight:500; }
+.form-group select, .form-group input, .form-group textarea { width:100%; padding:12px 14px; border:1.5px solid #e0e0e0; border-radius:10px; font-size:14px; outline:none; transition:border .2s, box-shadow .2s; background:#fff; color:#333; }
+.form-group select:focus, .form-group input:focus, .form-group textarea:focus { border-color:#4fc3f7; box-shadow:0 0 0 3px rgba(79,195,247,0.15); }
+.form-group textarea { resize:vertical; min-height:60px; }
+.btn-submit { width:100%; padding:15px; background:linear-gradient(135deg,#4fc3f7,#2196f3); color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:600; cursor:pointer; transition:all .2s; margin-top:6px; box-shadow:0 4px 16px rgba(33,150,243,0.35); letter-spacing:1px; }
+.btn-submit:hover { background:linear-gradient(135deg,#29b6f6,#1e88e5); box-shadow:0 6px 20px rgba(33,150,243,0.45); }
+.btn-submit:active { transform:scale(0.97); }
 .btn-submit:disabled { background:#ccc; cursor:not-allowed; box-shadow:none; }
 
 /* Mobile */
 @media (max-width:768px) {
-  .container { flex-direction:column; padding:0 10px 12px; }
-  .right-panel { width:100%; }
-  .header h1 { font-size:17px; }
-  .info-card { margin:8px 10px; padding:14px 16px; }
-  .info-label { width:36px; font-size:13px; }
-  .info-value { font-size:14px; }
-  .info-value.process-area { min-height:96px; }
+  .main-wrapper { flex-direction:column; }
+  .right-panel { width:100%; border-left:none; border-top:1px solid #eee; }
+  .header { padding:18px 18px 16px; }
+  .header h1 { font-size:22px; }
+  .header h1 .sub-line { font-size:22px; }
+  .info-card { padding:16px 18px; }
+  .info-label { width:60px; font-size:13px; }
+  .info-value { font-size:13px; }
+  .left-panel { padding:16px 18px; }
+  .right-panel { padding:16px 18px; }
 }
 
 /* Empty / loading */
-.empty-state { text-align:center; color:#aaa; padding:24px 0; font-size:13px; line-height:1.8; }
-.loading { text-align:center; padding:18px; color:#888; font-size:13px; }
+.empty-state { text-align:center; color:#aaa; padding:30px 0; font-size:14px; line-height:1.8; }
+.loading { text-align:center; padding:20px; color:#999; font-size:13px; }
 
 /* Toast */
-.toast { position:fixed; top:50px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 24px; border-radius:22px; font-size:14px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+.toast { position:fixed; top:60px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 28px; border-radius:24px; font-size:14px; z-index:999; opacity:0; transition:opacity .3s; pointer-events:none; box-shadow:0 4px 16px rgba(0,0,0,0.2); }
 .toast.show { opacity:1; }
 .toast.success { background:#22c55e; }
 .toast.error { background:#ef4444; }
 
 /* Footer */
-.footer { text-align:center; padding:16px; font-size:11px; color:#ccc; }
+.footer { text-align:center; padding:20px; font-size:11px; color:#ccc; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1 id="pageTitle">工序流转 - 追溯查询</h1>
-  <div class="sub" id="pageSub">加载中...</div>
+  <h1>志锦包装工序追溯</h1>
+  <div class="nav-sub">扫码查验 | 工序管理</div>
 </div>
 
 <!-- 本单工艺要求信息卡 -->
 <div class="info-card" id="infoCard" style="display:none;">
-  <div class="info-title">▎本单工艺要求</div>
-  <div id="infoContent">
+  <div class="info-card-inner">
+    <div class="info-card-title">本单工艺要求</div>
     <div class="info-row">
-      <span class="info-label">材质</span>
+      <span class="info-label">材质：</span>
       <span class="info-value" id="infoMaterial">-</span>
     </div>
     <div class="info-row">
-      <span class="info-label">工艺</span>
-      <span class="info-value process-area" id="infoProcess">-</span>
+      <span class="info-label">工艺：</span>
+      <span class="info-value" id="infoProcess">-</span>
     </div>
     <div class="info-row">
-      <span class="info-label highlight">刀模编号</span>
-      <span class="info-value highlight-val" id="infoMold">-</span>
+      <span class="info-label">刀模编号：</span>
+      <span class="info-value" id="infoMold">-</span>
     </div>
     <div class="info-row">
-      <span class="info-label">印刷数量</span>
+      <span class="info-label">印刷数量：</span>
       <span class="info-value" id="infoQuantity">-</span>
     </div>
   </div>
 </div>
 
-<div class="container">
+<div class="main-wrapper">
   <!-- 左侧：历史工艺记录 -->
-  <div class="card left-panel">
-    <div class="card-title">📋 历史工艺记录</div>
+  <div class="left-panel">
+    <div class="section-title"><span class="icon">📋</span> 历史工艺记录</div>
     <div id="historyList"><div class="loading">正在加载记录...</div></div>
   </div>
 
-  <!-- 右侧：工序上报 -->
-  <div class="card right-panel">
-    <div class="card-title">📝 工序上报</div>
-    <div class="form-group">
-      <label>排版名称</label>
-      <input type="text" id="layoutName" readonly style="background:#f8f9fa;color:#555;">
-    </div>
+  <!-- 右侧：工序上传 -->
+  <div class="right-panel">
+    <div class="section-title"><span class="icon">📝</span> 工序上传</div>
     <div class="form-group">
       <label>当前工序</label>
       <select id="processSelect">
         <option value="印刷">印刷</option>
+        <option value="覆膜">覆膜</option>
         <option value="裱坑">裱坑</option>
         <option value="烫金银/击凹凸">烫金银/击凹凸</option>
         <option value="压纹">压纹</option>
@@ -132,18 +131,25 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; bac
       </select>
     </div>
     <div class="form-group">
-      <label>上报人</label>
+      <label>质检状态</label>
+      <select id="qualitySelect">
+        <option value="合格">合格</option>
+        <option value="待返工">待返工</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>上传人：</label>
       <input type="text" id="reporter" placeholder="请输入你的姓名">
     </div>
     <div class="form-group">
-      <label>备注（可选）</label>
-      <textarea id="remark" placeholder="数量、异常情况等"></textarea>
+      <label>上传人：</label>
+      <textarea id="remark" placeholder="备注（可选）"></textarea>
     </div>
     <button class="btn-submit" id="submitBtn" onclick="submitReport()">提交工序</button>
   </div>
 </div>
 
-<div class="footer">印刷追溯系统 v2.0</div>
+<div class="footer">印刷追溯系统 v2.1</div>
 
 <div class="toast" id="toast"></div>
 
@@ -214,22 +220,12 @@ function extractText(val) {
   return '未填写';
 }
 
-// 获取URL参数 - 支持"排版名称"和"name"两种参数名
-function getUrlParam(name) {
-  var params = new URLSearchParams(window.location.search);
-  var val = params.get(name);
-  if (val) return val;
-  return '';
-}
-
 function getLayoutName() {
-  // 优先用中文参数名，其次用英文 name（兼容旧版二维码）
   var params = new URLSearchParams(window.location.search);
   var name = params.get('排版名称');
   if (name) return name;
   name = params.get('name');
   if (name) return name;
-  // 尝试从 hash 中获取
   var hash = window.location.hash;
   if (hash && hash.indexOf('name=') >= 0) {
     return decodeURIComponent(hash.split('name=')[1].split('&')[0]);
@@ -336,9 +332,9 @@ function loadHistory(layoutName) {
       pendingProcs.forEach(function(p) {
         html += '<div class="record-item">';
         html += '<div class="record-row">';
-        html += '<span class="record-status">⏳</span>';
-        html += '<span class="record-name">' + p + '</span>';
-        html += '<span class="record-name" style="margin-left:auto;color:#f9ab00;font-size:12px;">待完成</span>';
+        html += '<span class="record-icon">⏳</span>';
+        html += '<span class="record-name pending">' + p + '</span>';
+        html += '<span class="record-meta">(待完成)</span>';
         html += '</div>';
         html += '</div>';
       });
@@ -353,6 +349,7 @@ function loadHistory(layoutName) {
 
       container.innerHTML = html;
 
+      // 更新工序下拉框：只显示待完成的工序
       var select = document.getElementById('processSelect');
       select.innerHTML = '';
       pendingProcs.forEach(function(p) {
@@ -374,20 +371,23 @@ function loadHistory(layoutName) {
 }
 
 function buildRecordHTML(displayName, rec, isDone, isExtra) {
-  var html = '<div class="record-item"' + (isExtra ? ' style="opacity:0.6"' : '') + '>';
+  var html = '<div class="record-item"' + (isExtra ? ' style="opacity:0.55"' : '') + '>';
   html += '<div class="record-row">';
-  html += '<span class="record-status">' + (isDone ? '✅' : '⏳') + '</span>';
-  html += '<span class="record-name">' + displayName + '</span>';
+  html += '<span class="record-icon">' + (isDone ? '✅' : '⏳') + '</span>';
+  html += '<span class="record-name' + (isDone ? '' : ' pending') + '">' + displayName + '</span>';
   if (rec.工序 !== displayName) {
-    html += '<span style="font-size:11px;color:#aaa;margin-left:4px;">(原:' + rec.工序 + ')</span>';
+    html += '<span class="record-extra">(原:' + rec.工序 + ')</span>';
   }
-  html += '<span class="record-name" style="margin-left:auto;color:#888;font-size:12px;">' + (rec.上报人 || '') + '</span>';
-  html += '</div>';
-  html += '<div class="record-meta">';
+  // 显示上报人和时间
+  var reporterName = rec.上报人 || '';
+  var timeStr = '';
   if (rec.更新时间) {
     var d = new Date(rec.更新时间);
     var pad = function(n){ return n < 10 ? '0'+n : n; };
-    html += pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    timeStr = pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  if (reporterName || timeStr) {
+    html += '<span class="record-meta">(' + reporterName + (reporterName && timeStr ? ', ' : '') + timeStr + ')</span>';
   }
   html += '</div>';
   html += '</div>';
@@ -395,7 +395,7 @@ function buildRecordHTML(displayName, rec, isDone, isExtra) {
 }
 
 function submitReport() {
-  var layoutName = document.getElementById('layoutName').value;
+  var layoutName = getLayoutName();
   var process = document.getElementById('processSelect').value;
   var reporter = document.getElementById('reporter').value.trim();
 
@@ -408,7 +408,7 @@ function submitReport() {
     return;
   }
   if (!reporter) {
-    showToast('请填写上报人姓名', 'error');
+    showToast('请填写上传人姓名', 'error');
     return;
   }
 
@@ -416,12 +416,15 @@ function submitReport() {
   btn.disabled = true;
   btn.textContent = '提交中...';
 
+  var quality = document.getElementById('qualitySelect').value;
+  var remark = document.getElementById('remark').value.trim();
+
   var url = API_BASE + '/api/records';
   var body = {
     layout_name: layoutName,
     process: process,
     reporter: reporter,
-    remark: document.getElementById('remark').value.trim()
+    remark: remark ? quality + ' - ' + remark : quality
   };
 
   fetch(url, {
@@ -452,16 +455,11 @@ function submitReport() {
 (function init() {
   var layoutName = getLayoutName();
   if (!layoutName) {
-    document.getElementById('pageTitle').textContent = '参数缺失';
-    document.getElementById('pageSub').textContent = 'URL中缺少「排版名称」参数';
+    document.querySelector('.nav-sub').textContent = 'URL中缺少「排版名称」参数';
     document.getElementById('historyList').innerHTML = '<div class="empty-state">请通过扫描产品二维码进入</div>';
     document.querySelector('.right-panel').style.display = 'none';
     return;
   }
-
-  document.getElementById('layoutName').value = layoutName;
-  document.getElementById('pageTitle').textContent = layoutName + ' 工序流转';
-  document.getElementById('pageSub').textContent = '扫码追溯 · 工序管理';
 
   loadProcessInfo(layoutName);
   loadHistory(layoutName);
