@@ -268,7 +268,7 @@ function showToast(msg, type) {
 
 function loadProcessInfo(layoutName) {
   var url = API_BASE + '/api/info?layout_name=' + encodeURIComponent(layoutName);
-  fetch(url)
+  return fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(data) {
       if (data.success && data.info) {
@@ -483,8 +483,9 @@ function submitReport() {
     return;
   }
 
-  loadProcessInfo(layoutName);
-  loadHistory(layoutName);
+  loadProcessInfo(layoutName).then(function() {
+    loadHistory(layoutName);
+  });
 })();
 </script>
 </body>
