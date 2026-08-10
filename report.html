@@ -167,52 +167,66 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 // ============ API 地址 ============
 var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
 
-// ============ 工序同义词映射 ============
-var PROCESS_SYNONYMS = {
-  '开始生产': ['开始生产', '开始'],
-  '印刷': ['印刷', '印', '彩印', '胶印', '丝印', 'UV印刷'],
-  '哑胶/光胶/哑油/光油': ['哑胶', '光胶', '哑油', '光油', '覆膜', '过胶', '覆哑膜', '覆光膜', '哑胶/光胶/哑油/光油', '过哑胶', '过光胶', '贴膜', '裱膜', '吸塑油', '吸塑', '过油', '上油'],
-  '烫金/烫银': ['烫金', '烫银', '烫金/烫银', '烫印', '电化铝'],
-  '击凸/击凹': ['击凸', '击凹', '击凹凸', '击凸/击凹', '凹凸'],
-  '局部UV': ['局部UV', 'UV', 'uv', '局部'],
-  '裱坑/对裱': ['裱坑', '对裱', '裱纸', '裱瓦', '贴坑', '裱楞', '裱坑/对裱'],
-  '模切': ['模切', '刀模', '啤', '啤切', '冲切', '切'],
+// ============ 工序关键词匹配映射（用于将提交记录匹配到工艺字段中的具体项） ============
+var PROCESS_KEYWORDS = {
+  '印刷': ['印刷', '印', '彩印', '胶印', '丝印'],
+  '哑胶': ['哑胶', '覆哑膜', '过哑胶'],
+  '光胶': ['光胶', '覆光膜', '过光胶'],
+  '哑油': ['哑油', '过哑油'],
+  '光油': ['光油', '过光油'],
+  '吸塑油': ['吸塑油', '吸塑'],
+  '烫金': ['烫金', '烫印', '电化铝'],
+  '烫银': ['烫银'],
+  '击凸': ['击凸', '击凹凸', '凹凸'],
+  '击凹': ['击凹'],
+  '局部UV': ['局部UV', 'UV', 'uv'],
+  '裱坑': ['裱坑', '裱纸', '裱瓦', '贴坑'],
+  '对裱': ['对裱', '裱楞'],
+  '模切': ['模切', '啤', '啤切', '冲切'],
   '待出货': ['待出货', '出货', '发货']
 };
 
 var requiredProcesses = [];
-var completedStandardProcesses = [];
 
-function normalizeProcessName(input) {
-  if (!input) return '';
-  var trimmed = input.trim();
-  for (var stdName in PROCESS_SYNONYMS) {
-    var aliases = PROCESS_SYNONYMS[stdName];
-    for (var i = 0; i < aliases.length; i++) {
-      if (trimmed === aliases[i]) return stdName;
-    }
-    for (var i = 0; i < aliases.length; i++) {
-      if (trimmed.indexOf(aliases[i]) >= 0 || aliases[i].indexOf(trimmed) >= 0) {
-        return stdName;
-      }
-    }
+// 从工艺文本解析出具体工序列表（按原文显示）
+function parseCraftText(text) {
+  if (!text || text === '未填写') return [];
+  var items = [];
+  var segments = text.split(/[-—,，、/;；\s]+/);
+  var hasPrint = false;
+  for (var i = 0; i < segments.length; i++) {
+    var seg = segments[i].replace(/^(正面|背面|正面过|背面过)/, '').trim();
+    if (!seg) continue;
+    if (/^印刷$/.test(seg)) { hasPrint = true; continue; }
+    // 保留原始文本段（含正面/背面等前缀）
+    var original = segments[i].trim();
+    if (original && items.indexOf(original) < 0) items.push(original);
   }
-  return trimmed;
+  if (!hasPrint) items.unshift('印刷');
+  return items;
 }
 
-function parseRequiredProcesses(processText) {
-  if (!processText || processText === '未填写') return [];
-  var found = [];
-  for (var stdName in PROCESS_SYNONYMS) {
-    var aliases = PROCESS_SYNONYMS[stdName];
-    for (var i = 0; i < aliases.length; i++) {
-      if (processText.indexOf(aliases[i]) >= 0) {
-        found.push(stdName);
-        break;
-      }
+// 判断提交的工序是否匹配某个工艺段
+function processItemMatches(submittedProcess, craftItem) {
+  if (!submittedProcess || !craftItem) return false;
+  var sp = submittedProcess.trim().toLowerCase();
+  var ci = craftItem.trim().toLowerCase();
+  if (sp === ci) return true;
+  if (ci.indexOf(sp) >= 0 || sp.indexOf(ci) >= 0) return true;
+  // 去掉正面/背面前缀后再比
+  var ciCore = ci.replace(/^(正面|背面)/, '');
+  if (sp.indexOf(ciCore) >= 0 || ciCore.indexOf(sp) >= 0) return true;
+  // 通过关键词映射匹配
+  for (var keyword in PROCESS_KEYWORDS) {
+    var synonyms = PROCESS_KEYWORDS[keyword];
+    var craftHas = false, submitHas = false;
+    for (var i = 0; i < synonyms.length; i++) {
+      if (ciCore.indexOf(synonyms[i].toLowerCase()) >= 0) craftHas = true;
+      if (sp.indexOf(synonyms[i].toLowerCase()) >= 0) submitHas = true;
     }
+    if (craftHas && submitHas) return true;
   }
-  return found;
+  return false;
 }
 
 function extractText(val) {
@@ -264,7 +278,7 @@ function loadProcessInfo(layoutName) {
         document.getElementById('infoProcess').textContent = processText;
         document.getElementById('infoMold').textContent = extractText(data.info.mold);
         document.getElementById('infoQuantity').textContent = extractText(data.info.quantity);
-        requiredProcesses = parseRequiredProcesses(processText);
+        requiredProcesses = parseCraftText(processText);
       } else {
         document.getElementById('infoCard').style.display = 'none';
         requiredProcesses = [];
@@ -299,78 +313,66 @@ function loadHistory(layoutName) {
         return;
       }
 
-      completedStandardProcesses = [];
-      var matchedRecords = {};
+      // 匹配每个工艺项与提交记录
+      var completed = {};
+      var matchedRecs = {};
+      var extraRecs = [];
 
       records.forEach(function(rec) {
-        var stdName = normalizeProcessName(rec.工序);
         var done = (rec.状态 === '已完成' || rec.状态 === '✅');
-
         var matched = false;
+
         for (var i = 0; i < requiredProcesses.length; i++) {
-          if (requiredProcesses[i] === stdName) {
+          var item = requiredProcesses[i];
+          if (processItemMatches(rec.工序, item)) {
             matched = true;
-            if (!matchedRecords[stdName] || rec.更新时间 > matchedRecords[stdName].更新时间) {
-              matchedRecords[stdName] = rec;
+            if (!matchedRecs[item] || rec.更新时间 > matchedRecs[item].更新时间) {
+              matchedRecs[item] = rec;
             }
-            if (done && completedStandardProcesses.indexOf(stdName) === -1) {
-              completedStandardProcesses.push(stdName);
-            }
+            if (done) completed[item] = true;
             break;
           }
         }
 
-        if (!matched) {
-          var key = '__extra__' + rec.工序;
-          if (!matchedRecords[key]) {
-            matchedRecords[key] = rec;
-          }
-        }
+        if (!matched) extraRecs.push(rec);
       });
 
+      // 生成HTML
       var html = '';
+      var pending = [];
 
-      requiredProcesses.forEach(function(stdName) {
-        if (matchedRecords[stdName]) {
-          var rec = matchedRecords[stdName];
-          var done = completedStandardProcesses.indexOf(stdName) >= 0;
-          html += buildRecordHTML(stdName, rec, done);
+      requiredProcesses.forEach(function(item) {
+        if (completed[item] && matchedRecs[item]) {
+          html += buildRecordHTML(item, matchedRecs[item], true);
+        } else if (matchedRecs[item]) {
+          html += buildRecordHTML(item, matchedRecs[item], false);
+        } else {
+          pending.push(item);
+          html += '<div class="record-item"><div class="record-row">';
+          html += '<span class="record-icon">⏳</span>';
+          html += '<span class="record-name pending">' + item + '</span>';
+          html += '<span class="record-meta">(待完成)</span>';
+          html += '</div></div>';
         }
       });
 
-      var pendingProcs = requiredProcesses.filter(function(p) {
-        return completedStandardProcesses.indexOf(p) === -1;
+      extraRecs.forEach(function(rec) {
+        var done = (rec.状态 === '已完成' || rec.状态 === '✅');
+        html += buildRecordHTML(rec.工序, rec, done, true);
       });
-      pendingProcs.forEach(function(p) {
-        html += '<div class="record-item">';
-        html += '<div class="record-row">';
-        html += '<span class="record-icon">⏳</span>';
-        html += '<span class="record-name pending">' + p + '</span>';
-        html += '<span class="record-meta">(待完成)</span>';
-        html += '</div>';
-        html += '</div>';
-      });
-
-      for (var key in matchedRecords) {
-        if (key.indexOf('__extra__') === 0) {
-          var rec = matchedRecords[key];
-          var done = (rec.状态 === '已完成' || rec.状态 === '✅');
-          html += buildRecordHTML(rec.工序, rec, done, true);
-        }
-      }
 
       container.innerHTML = html;
 
-      // 更新工序下拉框：只显示待完成的工序
+      // 更新工序下拉框：只显示待完成的工艺项
       var select = document.getElementById('processSelect');
       select.innerHTML = '';
-      pendingProcs.forEach(function(p) {
+      pending.forEach(function(p) {
         var opt = document.createElement('option');
         opt.value = p;
         opt.textContent = p;
         select.appendChild(opt);
       });
-      if (pendingProcs.length === 0) {
+      if (pending.length === 0) {
         var opt = document.createElement('option');
         opt.value = '';
         opt.textContent = '✅ 全部工序已完成';
@@ -387,19 +389,28 @@ function buildRecordHTML(displayName, rec, isDone, isExtra) {
   html += '<div class="record-row">';
   html += '<span class="record-icon">' + (isDone ? '✅' : '⏳') + '</span>';
   html += '<span class="record-name' + (isDone ? '' : ' pending') + '">' + displayName + '</span>';
-  if (rec.工序 !== displayName) {
+  if (rec.工序 !== displayName && rec.工序) {
     html += '<span class="record-extra">(原:' + rec.工序 + ')</span>';
   }
-  // 显示上报人和时间
+  // 显示状态：已完成显示完成时间，否则显示待完成
   var reporterName = rec.上报人 || '';
   var timeStr = '';
   if (rec.更新时间) {
     var d = new Date(rec.更新时间);
     var pad = function(n){ return n < 10 ? '0'+n : n; };
-    timeStr = pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    timeStr = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
-  if (reporterName || timeStr) {
-    html += '<span class="record-meta">(' + reporterName + (reporterName && timeStr ? ', ' : '') + timeStr + ')</span>';
+  if (isDone) {
+    html += '<span class="record-meta" style="color:#22c55e;">(已完成';
+    if (timeStr) html += ' ' + timeStr;
+    if (reporterName) html += ' ' + reporterName;
+    html += ')</span>';
+  } else if (reporterName || timeStr) {
+    html += '<span class="record-meta">(';
+    if (reporterName) html += reporterName;
+    if (reporterName && timeStr) html += ', ';
+    if (timeStr) html += timeStr;
+    html += ')</span>';
   }
   html += '</div>';
   html += '</div>';
