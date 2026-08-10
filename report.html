@@ -263,7 +263,8 @@ function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show ' + (type || '');
-  setTimeout(function(){ t.className = 'toast'; }, 2500);
+  var duration = (type === 'error') ? 8000 : 2500;
+  setTimeout(function(){ t.className = 'toast'; }, duration);
 }
 
 function loadProcessInfo(layoutName) {
@@ -457,18 +458,23 @@ function submitReport() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r) {
+    return r.text().then(function(text) {
+      try { return JSON.parse(text); }
+      catch(e) { throw new Error('返回数据格式错误: ' + text.substring(0, 200)); }
+    });
+  })
   .then(function(data) {
     if (data.success) {
       showToast('工序上报成功！', 'success');
       document.getElementById('remark').value = '';
       loadHistory(layoutName);
     } else {
-      showToast('提交失败: ' + (data.message || '未知错误'), 'error');
+      showToast('提交失败: ' + JSON.stringify(data).substring(0, 100), 'error');
     }
   })
   .catch(function(err) {
-    showToast('提交失败: 网络错误 - ' + err.message, 'error');
+    showToast('提交失败: ' + err.message, 'error');
   })
   .finally(function() {
     btn.disabled = false;
