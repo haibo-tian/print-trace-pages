@@ -121,13 +121,15 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
     <div class="form-group">
       <label>当前工序</label>
       <select id="processSelect">
+        <option value="开始生产">开始生产</option>
         <option value="印刷">印刷</option>
-        <option value="覆膜">覆膜</option>
-        <option value="裱坑">裱坑</option>
-        <option value="烫金银/击凹凸">烫金银/击凹凸</option>
-        <option value="压纹">压纹</option>
+        <option value="哑胶/光胶/哑油/光油">哑胶/光胶/哑油/光油</option>
+        <option value="烫金/烫银">烫金/烫银</option>
+        <option value="击凸/击凹">击凸/击凹</option>
+        <option value="局部UV">局部UV</option>
+        <option value="裱坑/对裱">裱坑/对裱</option>
         <option value="模切">模切</option>
-        <option value="糊盒">糊盒</option>
+        <option value="待出货">待出货</option>
       </select>
     </div>
     <div class="form-group">
@@ -138,12 +140,25 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
       </select>
     </div>
     <div class="form-group">
-      <label>上传人：</label>
-      <input type="text" id="reporter" placeholder="请输入你的姓名">
+      <label>上报人</label>
+      <select id="reporterSelect">
+        <option value="">请选择上报人</option>
+        <option value="Yp-印刷">Yp-印刷</option>
+        <option value="Xsx-印刷">Xsx-印刷</option>
+        <option value="Xfh-工艺">Xfh-工艺</option>
+        <option value="Hfj-工艺">Hfj-工艺</option>
+        <option value="Yw-压纹">Yw-压纹</option>
+        <option value="Xhy-工艺">Xhy-工艺</option>
+        <option value="模切-李">模切-李</option>
+        <option value="模切-魏">模切-魏</option>
+        <option value="模切-陆">模切-陆</option>
+        <option value="开始-采购">开始-采购</option>
+        <option value="待出货-车间">待出货-车间</option>
+      </select>
     </div>
     <div class="form-group">
-      <label>上传人：</label>
-      <textarea id="remark" placeholder="备注（可选）"></textarea>
+      <label>备注（可选）</label>
+      <textarea id="remark" placeholder="数量、异常情况等"></textarea>
     </div>
     <button class="btn-submit" id="submitBtn" onclick="submitReport()">提交工序</button>
   </div>
@@ -159,13 +174,15 @@ var API_BASE = "https://1465018414-5mu1e1gw37.ap-guangzhou.tencentscf.com";
 
 // ============ 工序同义词映射 ============
 var PROCESS_SYNONYMS = {
-  '印刷': ['印刷', '印', '彩印', '胶印', '丝印', 'UV印刷', 'UV印'],
-  '覆膜': ['覆膜', '覆哑膜', '覆光膜', '过胶', '哑胶', '光胶', '过哑胶', '过光胶', '贴膜', '裱膜', '哑膜', '光膜'],
-  '裱坑': ['裱坑', '裱纸', '裱瓦', '贴坑', '裱楞'],
-  '烫金': ['烫金', '烫银', '烫金银', '烫金击凸', '烫银击凸', '击凹凸', '烫印', '电化铝', '烫金/击凹凸', '烫金银/击凹凸'],
-  '压纹': ['压纹', '压花', '纹', '压纹路'],
+  '开始生产': ['开始生产', '开始'],
+  '印刷': ['印刷', '印', '彩印', '胶印', '丝印', 'UV印刷'],
+  '哑胶/光胶/哑油/光油': ['哑胶', '光胶', '哑油', '光油', '覆膜', '过胶', '覆哑膜', '覆光膜', '哑胶/光胶/哑油/光油', '过哑胶', '过光胶', '贴膜', '裱膜'],
+  '烫金/烫银': ['烫金', '烫银', '烫金/烫银', '烫印', '电化铝'],
+  '击凸/击凹': ['击凸', '击凹', '击凹凸', '击凸/击凹', '凹凸'],
+  '局部UV': ['局部UV', 'UV', 'uv', '局部'],
+  '裱坑/对裱': ['裱坑', '对裱', '裱纸', '裱瓦', '贴坑', '裱楞', '裱坑/对裱'],
   '模切': ['模切', '刀模', '啤', '啤切', '冲切', '切'],
-  '糊盒': ['糊盒', '粘盒', '粘', '糊', '粘合', '成型', '折盒']
+  '待出货': ['待出货', '出货', '发货']
 };
 
 var requiredProcesses = [];
@@ -397,7 +414,7 @@ function buildRecordHTML(displayName, rec, isDone, isExtra) {
 function submitReport() {
   var layoutName = getLayoutName();
   var process = document.getElementById('processSelect').value;
-  var reporter = document.getElementById('reporter').value.trim();
+  var reporter = document.getElementById('reporterSelect').value;
 
   if (!layoutName) {
     showToast('排版名称为空，请检查二维码URL', 'error');
@@ -408,7 +425,7 @@ function submitReport() {
     return;
   }
   if (!reporter) {
-    showToast('请填写上传人姓名', 'error');
+    showToast('请选择上报人', 'error');
     return;
   }
 
