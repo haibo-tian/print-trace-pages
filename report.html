@@ -15,11 +15,10 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
 .header .nav-sub { font-size:13px; opacity:.75; margin-top:6px; letter-spacing:.5px; text-align:center; }
 
 /* ===== Info Card ===== */
-.info-card { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 100%); border-radius:0; padding:18px 22px; margin:0; color:#fff; }
-.info-card-inner { display:flex; align-items:flex-start; gap:12px; }
+.info-card { background:linear-gradient(135deg,#0d5e5e 0%,#1a7a7a 100%); border-radius:0; padding:18px 22px; margin:0; color:#fff; position:relative; overflow:hidden; }
+.info-card::before { content:''; position:absolute; inset:0; background:url('img/shengyi_xinglong.png') center/cover no-repeat; opacity:0.18; mix-blend-mode:screen; pointer-events:none; z-index:0; }
+.info-card-inner { position:relative; z-index:1; display:flex; align-items:flex-start; gap:12px; }
 .info-card-text { flex:1; min-width:0; }
-.info-card-deco { width:240px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-.info-card-deco img { width:100%; max-height:200px; object-fit:contain; mix-blend-mode:screen; opacity:1; filter:brightness(1.05); }
 .info-card-title { font-size:14px; font-weight:600; margin-bottom:14px; padding-left:10px; border-left:3px solid rgba(255,255,255,0.7); letter-spacing:1px; }
 .info-row { display:flex; align-items:flex-start; padding:6px 0; }
 .info-label { font-size:14px; color:rgba(255,255,255,0.65); width:80px; flex-shrink:0; padding-top:2px; white-space:nowrap; }
@@ -62,8 +61,6 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
   .header h1 .sub-line { font-size:22px; }
   .info-card { padding:16px 18px; }
   .info-card-inner { gap:8px; }
-  .info-card-deco { width:180px; }
-  .info-card-deco img { max-height:160px; }
   .info-label { width:60px; font-size:13px; }
   .info-value { font-size:13px; }
   .left-panel { padding:16px 18px; }
@@ -116,9 +113,6 @@ body { font-family:-apple-system,"PingFang SC","Microsoft YaHei","Helvetica Neue
         <span class="info-label">印刷数量：</span>
         <span class="info-value" id="infoQuantity">-</span>
       </div>
-    </div>
-    <div class="info-card-deco">
-      <img src="img/shengyi_xinglong.png" alt="生意兴隆">
     </div>
   </div>
 </div>
