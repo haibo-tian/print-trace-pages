@@ -461,29 +461,26 @@ function loadHistory(layoutName) {
 function buildRecordHTML(displayName, rec, isDone, isExtra) {
   var html = '<div class="record-item"' + (isExtra ? ' style="opacity:0.55"' : '') + '>';
   html += '<div class="record-row">';
-  html += '<span class="record-icon">' + (isDone ? '✅' : '⏳') + '</span>';
+  html += '<span class="record-icon">' + (isDone ? '✅' : '') + '</span>';
   html += '<span class="record-name' + (isDone ? '' : ' pending') + '">' + displayName + '</span>';
-  if (rec.工序 !== displayName && rec.工序) {
-    html += '<span class="record-extra">(原:' + rec.工序 + ')</span>';
-  }
-  // 显示状态：已完成显示完成时间，否则显示待完成
   var reporterName = rec.上报人 || '';
   var timeStr = '';
   if (rec.更新时间) {
     var d = new Date(rec.更新时间);
     var pad = function(n){ return n < 10 ? '0'+n : n; };
-    timeStr = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var mo = d.getMonth() + 1;
+    var day = d.getDate();
+    timeStr = mo + '月' + day + '日 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   }
   if (isDone) {
     html += '<span class="record-meta" style="color:#22c55e;">(已完成';
-    if (timeStr) html += ' ' + timeStr;
     if (reporterName) html += ' ' + reporterName;
+    if (timeStr) html += ' ' + timeStr;
     html += ')</span>';
   } else if (reporterName || timeStr) {
     html += '<span class="record-meta">(';
     if (reporterName) html += reporterName;
-    if (reporterName && timeStr) html += ', ';
-    if (timeStr) html += timeStr;
+    if (reporterName && timeStr) html += ' ' + timeStr;
     html += ')</span>';
   }
   html += '</div>';
