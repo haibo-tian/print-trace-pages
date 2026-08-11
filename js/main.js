@@ -128,6 +128,11 @@
                 log("\u6392\u7248\u540D\u79F0\u4E3A\u7A7A", "error");
                 return;
             }
+            if (name.length > 100) {
+                alert("\u6392\u7248\u540D\u79F0\u8FC7\u957F\uFF0C\u6700\u591A100\u4E2A\u5B57\u7B26");
+                log("\u6392\u7248\u540D\u79F0\u8FC7\u957F", "error");
+                return;
+            }
 
             log("\u6B63\u5728\u751F\u6210\u7248\u9762ID...");
             var layoutId = generateLayoutId();
