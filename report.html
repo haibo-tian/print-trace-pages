@@ -367,7 +367,10 @@ function loadHistory(layoutName) {
   fetch(url)
     .then(function(r){ return r.json(); })
     .then(function(data) {
-      var records = data.records || [];
+      var records = (data.records || []).filter(function(rec) {
+        // 过滤掉CEP插件创建排版时的初始记录（工序为空）
+        return rec.工序 && rec.工序.trim() !== '';
+      });
 
       if (requiredProcesses.length === 0) {
         if (records.length === 0) {
